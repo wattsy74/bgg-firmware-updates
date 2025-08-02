@@ -1,0 +1,56 @@
+{
+  "firmware_version": "3.1",
+  "generated_at": "2025-08-02T13:44:20.329686Z",
+  "files": {
+    "boot.py": {
+      "version": "3.1",
+      "checksum": "4582d51a2e2253545acf7d9cfc31b7d2ef8f9becd9b973f82e665f7fbd542147",
+      "size": 5028,
+      "algorithm": "sha256"
+    },
+    "code.py": {
+      "version": "3.1",
+      "checksum": "5161548cc7c7913fcd400238e5010addf93c6c921e6c8d1ef248f7407eddc2f2",
+      "size": 12571,
+      "algorithm": "sha256"
+    },
+    "serial_handler.py": {
+      "version": "3.1",
+      "checksum": "b2f91bbeb71cc1b01a1473bb7ae76666650beb133fba8eae472b38209ef9e11f",
+      "size": 32251,
+      "algorithm": "sha256"
+    },
+    "utils.py": {
+      "version": "3.1",
+      "checksum": "eb7e8d814e3429c8f079c7f822f56d0a75c364c303a6f34ad39675d1cbe6be21",
+      "size": 790,
+      "algorithm": "sha256"
+    },
+    "hardware.py": {
+      "version": "3.1",
+      "checksum": "ea26612123d34dad52dac02014e0e6d920af90252594459f9abcc4426bbecc8c",
+      "size": 1365,
+      "algorithm": "sha256"
+    },
+    "gamepad.py": {
+      "version": "3.1",
+      "checksum": "3620d579a83392914eadf2779fa525e9de7480af279d9a02b5a5f59452d6af11",
+      "size": 1149,
+      "algorithm": "sha256"
+    },
+    "config.json": {
+      "version": "3.1",
+      "checksum": "9b6ce3585c5af69d3844a9345e6f31977fb43e9ca936e37ef1842f0c71874a21",
+      "size": 1021,
+      "algorithm": "sha256"
+    },
+    "presets.json": {
+      "version": "3.1",
+      "checksum": "8a803b3e660370e253378fadb1c9f27e94f165c718edd73ec5d03056bd39ee41",
+      "size": 5759,
+      "algorithm": "sha256"
+    }
+  },
+  "update_url": "https://api.github.com/repos/wattsy74/bgg-firmware-updates/contents/",
+  "release_notes": "BGG Firmware v3.1 - See GitHub releases for details"
+}
