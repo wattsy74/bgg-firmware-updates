@@ -1,5 +1,5 @@
 # serial_handler.py
-__version__ = "3.0"
+__version__ = "3.2"
 
 def get_version():
     return __version__
@@ -12,18 +12,32 @@ from hardware import setup_leds, setup_buttons, setup_whammy, resolve_pin
 
 def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_state, user_presets, preset_colors, buffer, mode, filename, file_lines, gp, update_leds, poll_inputs, joystick_x=None, joystick_y=None, max_bytes=8, start_tilt_wave=None):
     try:
+        # Pre-emptive memory cleanup for large file operations
+        if mode == "write" and len(file_lines) > 8:  # ULTRA-early cleanup threshold (8 lines = ~400 bytes)
+            import gc
+            gc.collect()
+            
         for _ in range(max_bytes):
             if not serial.in_waiting:
                 return buffer, mode, filename, file_lines, config, raw_config, leds, buttons, whammy, current_state, user_presets, preset_colors
-            byte = serial.read(1)
-            if not byte:
-                return buffer, mode, filename, file_lines, config, raw_config, leds, buttons, whammy, current_state, user_presets, preset_colors
-            char = byte.decode("utf-8")
+            
+            try:
+                byte = serial.read(1)
+                if not byte:
+                    return buffer, mode, filename, file_lines, config, raw_config, leds, buttons, whammy, current_state, user_presets, preset_colors
+                    
+                char = byte.decode("utf-8")
+            except Exception as byte_error:
+                print(f"❌ Error reading/decoding byte: {byte_error}")
+                # Skip this byte and continue
+                continue
 
             if char == "\n":
                 line = buffer.rstrip("\r\n")
                 buffer = ""
                 print(f"📩 Received line: {line}")
+                # DEBUG: Send acknowledgment for ANY line received
+                serial.write(f"DEBUG: Line received: {line[:50]}{'...' if len(line) > 50 else ''}\n".encode("utf-8"))
 
                 # 🎬 Handle DEMO command - run LED demo routine (non-blocking)
                 if mode is None and line == "DEMO":
@@ -158,6 +172,9 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     file_lines = []
                     mode = "write"
                     print(f"📝 Starting write to {filename}")
+                    # DEBUG: Send immediate acknowledgment
+                    serial.write(f"DEBUG: WRITEFILE command received for {filename}\n".encode("utf-8"))
+                    print(f"🔍 DEBUG: WRITEFILE command processed, mode set to write")
 
                 # 🔄 Handle user preset import
                 elif mode is None and line == "IMPORTUSER":
@@ -332,6 +349,22 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                 elif mode == "write":
                     if line == "END":
                         try:
+                            # Ultra-aggressive pre-write memory cleanup
+                            import gc
+                            line_count = len(file_lines)
+                            if line_count > 40:  # Much earlier threshold
+                                gc.collect()
+                                print(f"🧠 Ultra pre-write cleanup for {filename}: {line_count} lines")
+                                
+                                # Multiple cleanup passes for very large files
+                                if line_count > 80:
+                                    gc.collect()
+                                    print(f"🧠 Double pre-write cleanup for {filename}: {line_count} lines")
+                                    
+                                    if line_count > 120:
+                                        gc.collect()
+                                        print(f"🧠 Triple pre-write cleanup for {filename}: {line_count} lines")
+                            
                             raw = "\n".join(file_lines)
                             if filename.endswith(".json"):
                                 parsed = json.loads(raw)
@@ -382,17 +415,119 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                     serial.write(f"✅ File {filename} written\n".encode("utf-8"))
                                     print("✅ File written successfully")
                             else:
-                                # Write raw text for non-JSON files
-                                with open(filename, "w") as f:
-                                    f.write(raw + "\n")
+                                # Write raw text for non-JSON files with ULTRA-EXTREME chunked approach
+                                if len(raw) > 500:  # ULTRA-LOW threshold for ANY file >500 bytes
+                                    print(f"🧠 Writing file {filename} in ULTRA-EXTREME micro-chunks: {len(raw)} bytes")
+                                    # Maximum pre-write cleanup
+                                    import gc
+                                    gc.collect()
+                                    gc.collect()
+                                    gc.collect()  # Triple cleanup
+                                    
+                                    # ULTRA-EXTREME: Write in tiny 128-byte chunks with maximum yield points
+                                    chunk_size = 128  # 128-byte micro-chunks (ULTRA-conservative)
+                                    with open(filename, "w") as f:
+                                        for i in range(0, len(raw), chunk_size):
+                                            chunk = raw[i:i + chunk_size]
+                                            f.write(chunk)
+                                            # Cleanup and yield after EVERY micro-chunk
+                                            gc.collect()
+                                            import time
+                                            time.sleep(0.010)  # 10ms yield point for maximum CPU breathing room
+                                            
+                                            # Extra cleanup every 2 chunks (256 bytes)
+                                            if i > 0 and i % (chunk_size * 2) == 0:
+                                                gc.collect()
+                                                gc.collect()  # Double cleanup every 256 bytes
+                                                time.sleep(0.015)  # 15ms extra yield every 256 bytes
+                                                print(f"🧠 ULTRA-EXTREME cleanup at {i} bytes of {len(raw)}")
+                                            
+                                            # Emergency cleanup every 4 chunks (512 bytes)
+                                            if i > 0 and i % (chunk_size * 4) == 0:
+                                                gc.collect()
+                                                gc.collect()
+                                                gc.collect()  # Triple cleanup every 512 bytes
+                                                time.sleep(0.020)  # 20ms emergency yield every 512 bytes
+                                                print(f"🚨 EMERGENCY cleanup at {i} bytes of {len(raw)}")
+                                        f.write("\n")
+                                    print(f"✅ File {filename} written successfully in ULTRA-EXTREME micro-chunks")
+                                else:
+                                    # Small files still get conservative treatment
+                                    import gc
+                                    gc.collect()
+                                    gc.collect()  # Double cleanup even for small files
+                                    with open(filename, "w") as f:
+                                        f.write(raw + "\n")
+                                    print(f"✅ Small file {filename} written successfully")
+                                    
+                                serial.write(f"✅ File {filename} written\n".encode("utf-8"))
 
                         except Exception as e:
                             serial.write(f"ERROR: Failed to write {filename}: {e}\n".encode("utf-8"))
                             print("❌", e)
-                        mode = None
-                        file_lines = []
+                        finally:
+                            # Always cleanup mode and file_lines, even on error
+                            mode = None
+                            file_lines = []
+                            # Final cleanup
+                            import gc
+                            gc.collect()
                     else:
-                        file_lines.append(line)
+                        try:
+                            file_lines.append(line)
+                            # Ultra-aggressive memory protection: Much more frequent cleanup for very large files
+                            line_count = len(file_lines)
+                            
+                            # Start cleanup MUCH earlier for large files
+                            if line_count > 10:  # Start at just 10 lines (≈500 bytes)
+                                import gc
+                                gc.collect()
+                                print(f"🧠 ULTRA-early memory cleanup: {line_count} lines for {filename}")
+                                
+                                # Very aggressive cleanup for small-medium files
+                                if line_count > 20:  # ≈1KB threshold
+                                    gc.collect()
+                                    gc.collect()  # Double cleanup
+                                    print(f"🧠 ULTRA aggressive cleanup: {line_count} lines for {filename}")
+                                    
+                                    # Emergency cleanup for medium files  
+                                    if line_count > 30:  # ≈1.5KB emergency threshold
+                                        gc.collect()
+                                        gc.collect()
+                                        gc.collect()  # Triple cleanup
+                                        print(f"🚨 ULTRA emergency cleanup: {line_count} lines for {filename}")
+                                        
+                                        # Critical cleanup for medium-large files
+                                        if line_count > 40:  # ≈2KB critical threshold
+                                            gc.collect()
+                                            gc.collect()
+                                            gc.collect()
+                                            gc.collect()  # Quadruple cleanup
+                                            print(f"🆘 ULTRA critical memory cleanup: {line_count} lines for {filename}")
+                                            
+                                            # Ultimate cleanup for large files
+                                            if line_count > 50:  # ≈2.5KB ultimate threshold
+                                                gc.collect()
+                                                gc.collect()
+                                                gc.collect()
+                                                gc.collect()
+                                                gc.collect()  # Quintuple cleanup
+                                                print(f"💀 ULTRA ultimate memory cleanup: {line_count} lines for {filename}")
+                                                
+                                                # Final desperate cleanup for very large files
+                                                if line_count > 60:  # ≈3KB final threshold
+                                                    gc.collect()
+                                                    gc.collect()
+                                                    gc.collect()
+                                                    gc.collect()
+                                                    gc.collect()
+                                                    gc.collect()  # Sextuple cleanup
+                                                    print(f"☠️ ULTRA final desperate cleanup: {line_count} lines for {filename}")
+                        except Exception as append_error:
+                            print(f"❌ Error appending line to file_lines: {append_error}")
+                            serial.write(f"ERROR: Memory error during file processing: {append_error}\n".encode("utf-8"))
+                            mode = None
+                            file_lines = []
 
                 # 🔧 User preset merge logic
                 elif mode == "merge_user":
@@ -432,7 +567,18 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         mode = None
                         file_lines = []
                     else:
-                        file_lines.append(line)
+                        try:
+                            file_lines.append(line)
+                            # Memory protection for merge mode too
+                            if len(file_lines) > 25:  # User presets are typically smaller
+                                import gc
+                                gc.collect()
+                                print(f"🧠 Memory cleanup in merge mode: {len(file_lines)} lines")
+                        except Exception as merge_append_error:
+                            print(f"❌ Error appending line in merge mode: {merge_append_error}")
+                            serial.write(f"ERROR: Memory error during merge: {merge_append_error}\n".encode("utf-8"))
+                            mode = None
+                            file_lines = []
 
                 # 🔁 Handle REBOOTBOOTSEL command
                 elif mode is None and line == "REBOOTBOOTSEL":
@@ -456,12 +602,32 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
 
                 # 📁 Handle MKDIR command
                 elif mode is None and line.startswith("MKDIR:"):
+                    print(f"🔍 MKDIR handler entered with line: {line}")
                     try:
                         import os
                         folder_path = line[6:].strip()  # Remove "MKDIR:" prefix
-                        os.makedirs(folder_path, exist_ok=True)
+                        print(f"📁 Creating directory: {folder_path}")
+                        # CircuitPython uses os.mkdir(), not os.makedirs()
+                        try:
+                            os.mkdir(folder_path)
+                            print(f"✅ Created new directory: {folder_path}")
+                        except OSError as mkdir_error:
+                            # Directory might already exist, which is fine
+                            # Check for various "file exists" error patterns across different systems
+                            error_str = str(mkdir_error).lower()
+                            if (
+                                "eexist" in error_str or 
+                                "file exists" in error_str or 
+                                "exists" in error_str or
+                                "cannot create" in error_str or
+                                mkdir_error.errno == 17  # EEXIST errno
+                            ):
+                                print(f"📁 Directory already exists: {folder_path}")
+                            else:
+                                # Re-raise for other OS errors
+                                raise mkdir_error
                         serial.write(f"MKDIR:SUCCESS:{folder_path}\n".encode("utf-8"))
-                        print(f"✅ Created directory: {folder_path}")
+                        print(f"✅ Directory ready: {folder_path}")
                     except Exception as e:
                         serial.write(f"MKDIR:ERROR:{e}\n".encode("utf-8"))
                         print(f"❌ Failed to create directory: {e}")
@@ -478,6 +644,16 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     except Exception as e:
                         serial.write(f"ERROR: {e}\nEND\n".encode("utf-8"))
                         print(f"❌ Error sending UID: {e}")
+
+                # 📖 Handle READVERSION command
+                elif mode is None and line == "READVERSION":
+                    print("📖 READVERSION handler entered")
+                    try:
+                        serial.write(f"VERSION:{__version__}\nEND\n".encode("utf-8"))
+                        print(f"✅ Version sent: {__version__}")
+                    except Exception as e:
+                        serial.write(f"ERROR: {e}\nEND\n".encode("utf-8"))
+                        print(f"❌ Error sending version: {e}")
 
                 # ✅ Firmware ready status command
                 elif mode is None and (line == "FIRMWARE_READY?" or line == "READY?"):
