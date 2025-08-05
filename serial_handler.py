@@ -473,7 +473,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                     ):
                                         ensure_parent_dir_exists(filename)
                                         with open(filename, "w") as f:
-                                            f.write(json.dumps(parsed, indent=2) + "\n")
+                                            f.write(json.dumps(parsed) + "\n")
                                         serial.write(f"✅ File {filename} written\n".encode("utf-8"))
                                         print("✅ File written successfully (user_presets.json, validated)")
                                         user_presets = parsed
@@ -484,7 +484,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 elif filename == "/config.json":
                                     ensure_parent_dir_exists(filename)
                                     with open(filename, "w") as f:
-                                        f.write(json.dumps(parsed, indent=2) + "\n")
+                                        f.write(json.dumps(parsed) + "\n")
                                     serial.write(f"✅ File {filename} written\n".encode("utf-8"))
                                     print("✅ File written successfully")
                                     if leds:
@@ -505,7 +505,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                     # Write re-serialized JSON for other small JSON files with proper formatting
                                     ensure_parent_dir_exists(filename)
                                     with open(filename, "w") as f:
-                                        f.write(json.dumps(parsed, indent=2) + "\n")
+                                        f.write(json.dumps(parsed) + "\n")
                                     serial.write(f"✅ File {filename} written\n".encode("utf-8"))
                                     print("✅ File written successfully")
                                     
@@ -572,7 +572,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                             ):
                                 ensure_parent_dir_exists(filename)
                                 with open(filename, "w") as f:
-                                    f.write(json.dumps(merged, indent=2) + "\n")
+                                    f.write(json.dumps(merged) + "\n")
                                 user_presets = merged
                                 preset_colors = user_presets.get("NewUserPreset1", {})
                                 serial.write(f"✅ Merged into {filename}\n".encode("utf-8"))
