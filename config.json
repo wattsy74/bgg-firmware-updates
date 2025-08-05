@@ -36,10 +36,10 @@
   "joystick_x_pin": "GP28",
   "YELLOW_FRET": "GP12",
   "_metadata": {
-    "version": "3.5.0",
+    "version": "3.9.0",
     "lastUpdated": "2025-08-05",
-    "description": "BumbleGum Guitar Controller Configuration - v3.5 Test Update",
-    "updateTest": "v3.5 streaming and JSON formatting test"
+    "description": "BumbleGum Guitar Controller Configuration - v3.9 Smart Acknowledgment System",
+    "updateTest": "v3.9 smart acknowledgment and enhanced device communication"
   },
   "SELECT": "GP0",
   "led_brightness": 1.0,

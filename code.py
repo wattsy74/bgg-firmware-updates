@@ -1,14 +1,20 @@
 FIRMWARE_VERSIONS = {
-    "code.py": "3.5",
-    "hardware.py": "3.5",
-    "utils.py": "3.5",
-    "gamepad.py": "3.5",
-    "serial_handler.py": "3.5",
-    "pin_detect.py": "3.5",
-    "boot.py": "3.5",
-    "demo_routine.py": "3.5",
-    "demo_state.py": "3.5"
+    "code.py": "3.9",
+    "hardware.py": "3.9",
+    "utils.py": "3.9",
+    "gamepad.py": "3.9",
+    "serial_handler.py": "3.9",
+    "pin_detect.py": "3.9",
+    "boot.py": "3.9",
+    "demo_routine.py": "3.9",
+    "demo_state.py": "3.9"
 }
+
+# BGG Firmware v3.9 - Smart Acknowledgment System
+# - Enhanced device detection and communication
+# - Smart ACK messages for Windows app compatibility
+# - Conditional debug output prevents firmware corruption
+# - Maintains v3.5 stability with communication improvements
 
 def get_firmware_versions():
     return FIRMWARE_VERSIONS

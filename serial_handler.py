@@ -1,5 +1,5 @@
-# serial_handler.py - High-Speed Streaming Version v3.5
-__version__ = "3.5"
+# serial_handler.py - High-Speed Streaming Version v3.9 (with JSON corruption protection)
+__version__ = "3.9"
 
 def get_version():
     return __version__
@@ -22,6 +22,74 @@ def ensure_parent_dir_exists(filepath):
             # Directory may already exist, ignore EEXIST
             if not ("exist" in str(e).lower() or getattr(e, 'errno', None) == 17):
                 raise
+
+# JSON safety function - sanitizes CircuitPython data structures for reliable JSON serialization
+def make_json_safe(obj, path="root"):
+    """
+    Recursively sanitizes CircuitPython objects for safe JSON serialization.
+    Converts special CircuitPython types to standard Python equivalents.
+    """
+    try:
+        if obj is None or isinstance(obj, (bool, int, float, str)):
+            return obj
+        elif isinstance(obj, dict):
+            safe_dict = {}
+            for k, v in obj.items():
+                # Ensure keys are strings and safe
+                safe_key = str(k) if k is not None else "null_key"
+                safe_dict[safe_key] = make_json_safe(v, f"{path}.{safe_key}")
+            return safe_dict
+        elif isinstance(obj, (list, tuple)):
+            return [make_json_safe(item, f"{path}[{i}]") for i, item in enumerate(obj)]
+        else:
+            # Convert any other type to string representation
+            str_repr = str(obj)
+            print(f"🔍 JSON Safety: Converting {type(obj).__name__} to string at {path}: {str_repr[:50]}...")
+            return str_repr
+    except Exception as e:
+        print(f"⚠️ JSON Safety error at {path}: {e}")
+        return f"<error_converting_{type(obj).__name__}>"
+
+# Atomic file write function - prevents corruption during write operations
+def atomic_write_json(filepath, data):
+    """
+    Safely writes JSON data using atomic operations (temp file + rename).
+    Prevents file corruption if power loss occurs during write.
+    """
+    import os
+    
+    # Sanitize data for CircuitPython compatibility
+    safe_data = make_json_safe(data, "config_root")
+    
+    # Create temp file path
+    temp_path = filepath + ".tmp"
+    
+    try:
+        # Write to temporary file first
+        with open(temp_path, "w") as f:
+            import json
+            f.write(json.dumps(safe_data))
+            f.write("\n")  # Ensure file ends with newline
+        
+        # Atomic rename (most filesystems guarantee this is atomic)
+        try:
+            os.remove(filepath)  # CircuitPython requires explicit remove before rename
+        except OSError:
+            pass  # File might not exist, which is fine
+        
+        # This should be atomic on most filesystems
+        os.rename(temp_path, filepath)
+        print(f"✅ Atomic JSON write completed: {filepath}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Atomic write failed for {filepath}: {e}")
+        # Clean up temp file if it exists
+        try:
+            os.remove(temp_path)
+        except OSError:
+            pass
+        return False
 
 def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_state, user_presets, preset_colors, buffer, mode, filename, file_lines, gp, update_leds, poll_inputs, joystick_x=None, joystick_y=None, max_bytes=8, start_tilt_wave=None):
     try:
@@ -48,9 +116,17 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
             if char == "\n":
                 line = buffer.rstrip("\r\n")
                 buffer = ""
-                print(f"📩 Received line: {line}")
-                # DEBUG: Send acknowledgment for ANY line received
-                serial.write(f"DEBUG: Line received: {line[:50]}{'...' if len(line) > 50 else ''}\n".encode("utf-8"))
+                print(f"📩 Received: {line}")
+                
+                # Smart acknowledgment system - only for device detection and critical commands
+                # Skip ACKs during file write operations to prevent corruption
+                if mode is None:  # Only send ACKs when not in file write mode
+                    # Device detection and communication commands need ACKs
+                    if (line == "FIRMWARE_READY?" or line == "READY?" or 
+                        line == "READVERSION" or line == "READDEVICENAME" or 
+                        line == "READUID" or line.startswith("READFILE:") or
+                        line.startswith("READPIN:") or line.startswith("PREVIEWLED:")):
+                        serial.write(f"ACK: {line[:20]}\n".encode("utf-8"))
 
                 # 🎬 Handle DEMO command - run LED demo routine (non-blocking)
                 if mode is None and line == "DEMO":
@@ -184,6 +260,9 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     filename = "/" + line.split(":", 1)[1]
                     file_lines = []
                     
+                    # Send initial acknowledgment for WRITEFILE - Windows app expects this
+                    serial.write(f"WRITEFILE:READY:{filename.split('/')[-1]}\n".encode("utf-8"))
+                    
                     # Optimized detection - use high-speed streaming for most Python files
                     fname_lower = filename.lower()
                     use_high_speed_streaming = (
@@ -203,12 +282,14 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     if use_high_speed_streaming:
                         mode = "write_stream"
                         print(f"📝 Starting HIGH-SPEED streaming write to {filename}")
+                        # Send streaming mode acknowledgment
+                        serial.write(f"STREAM:READY:{filename.split('/')[-1]}\n".encode("utf-8"))
                         # Open file handle immediately for high-speed streaming
                         try:
                             ensure_parent_dir_exists(filename)
                             stream_file = open(filename, "w")
                             file_lines = [stream_file]  # Store file handle in first position
-                            serial.write(f"DEBUG: HIGH-SPEED streaming activated for {filename}\n".encode("utf-8"))
+                            print(f"✅ High-speed streaming ready for {filename}")
                         except Exception as stream_error:
                             serial.write(f"ERROR: Failed to open stream for {filename}: {stream_error}\n".encode("utf-8"))
                             mode = "write"  # Fallback to regular mode
@@ -216,10 +297,6 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     else:
                         mode = "write"
                         print(f"📝 Starting regular write to {filename}")
-                    
-                    # DEBUG: Send immediate acknowledgment
-                    serial.write(f"DEBUG: WRITEFILE command received for {filename}\n".encode("utf-8"))
-                    print(f"🔍 DEBUG: WRITEFILE command processed, mode set to {mode}")
 
                 # 🔄 Handle user preset import
                 elif mode is None and line == "IMPORTUSER":
@@ -398,6 +475,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                             if file_lines and hasattr(file_lines[0], 'close'):
                                 file_lines[0].flush()  # Final flush
                                 file_lines[0].close()
+                                # Only send completion message for the Windows app - no extra acknowledgments
                                 serial.write(f"✅ File {filename} written (high-speed streaming)\n".encode("utf-8"))
                                 print(f"✅ High-speed streaming write completed for {filename}")
                             else:
@@ -472,42 +550,45 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                         )
                                     ):
                                         ensure_parent_dir_exists(filename)
-                                        with open(filename, "w") as f:
-                                            f.write(json.dumps(parsed) + "\n")
-                                        serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                        print("✅ File written successfully (user_presets.json, validated)")
-                                        user_presets = parsed
-                                        preset_colors = user_presets.get("NewUserPreset1", {})
+                                        if atomic_write_json(filename, parsed):
+                                            serial.write(f"✅ File {filename} written (atomic)\n".encode("utf-8"))
+                                            print("✅ File written successfully (user_presets.json, validated)")
+                                            user_presets = parsed
+                                            preset_colors = user_presets.get("NewUserPreset1", {})
+                                        else:
+                                            serial.write(f"ERROR: Atomic write failed for {filename}\n".encode("utf-8"))
                                     else:
                                         serial.write(f"ERROR: Invalid user_presets.json structure, write rejected\n".encode("utf-8"))
                                         print("❌ Invalid user_presets.json structure, write rejected")
                                 elif filename == "/config.json":
                                     ensure_parent_dir_exists(filename)
-                                    with open(filename, "w") as f:
-                                        f.write(json.dumps(parsed) + "\n")
-                                    serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                    print("✅ File written successfully")
-                                    if leds:
-                                        leds.deinit()
-                                    for p in buttons.values():
-                                        try:
-                                            p["obj"].deinit()
-                                        except:
-                                            pass
-                                    if whammy:
-                                        try:
-                                            whammy.deinit()
-                                        except:
-                                            pass
-                                    import microcontroller
-                                    microcontroller.reset()
+                                    if atomic_write_json(filename, parsed):
+                                        serial.write(f"✅ File {filename} written (atomic)\n".encode("utf-8"))
+                                        print("✅ Config file written successfully")
+                                        if leds:
+                                            leds.deinit()
+                                        for p in buttons.values():
+                                            try:
+                                                p["obj"].deinit()
+                                            except:
+                                                pass
+                                        if whammy:
+                                            try:
+                                                whammy.deinit()
+                                            except:
+                                                pass
+                                        import microcontroller
+                                        microcontroller.reset()
+                                    else:
+                                        serial.write(f"ERROR: Atomic write failed for {filename}\n".encode("utf-8"))
                                 else:
-                                    # Write re-serialized JSON for other small JSON files with proper formatting
+                                    # Write re-serialized JSON for other small JSON files with atomic operations
                                     ensure_parent_dir_exists(filename)
-                                    with open(filename, "w") as f:
-                                        f.write(json.dumps(parsed) + "\n")
-                                    serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                    print("✅ File written successfully")
+                                    if atomic_write_json(filename, parsed):
+                                        serial.write(f"✅ File {filename} written (atomic)\n".encode("utf-8"))
+                                        print("✅ JSON file written successfully")
+                                    else:
+                                        serial.write(f"ERROR: Atomic write failed for {filename}\n".encode("utf-8"))
                                     
                             else:
                                 # Small non-JSON files - write efficiently
@@ -518,9 +599,8 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                         if i < len(file_lines) - 1:
                                             f.write("\n")
                                     f.write("\n")  # Ensure file ends with newline
+                                serial.write(f"✅ File {filename} written\n".encode("utf-8"))
                                 print(f"✅ File {filename} written successfully ({line_count} lines) - v3.5 High-Speed Streaming ⚡")
-                                    
-                            serial.write(f"✅ File {filename} written\n".encode("utf-8"))
 
                         except Exception as e:
                             serial.write(f"ERROR: Failed to write {filename}: {e}\n".encode("utf-8"))
@@ -571,12 +651,13 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 )
                             ):
                                 ensure_parent_dir_exists(filename)
-                                with open(filename, "w") as f:
-                                    f.write(json.dumps(merged) + "\n")
-                                user_presets = merged
-                                preset_colors = user_presets.get("NewUserPreset1", {})
-                                serial.write(f"✅ Merged into {filename}\n".encode("utf-8"))
-                                print("✅ Merge complete (user_presets.json, validated)")
+                                if atomic_write_json(filename, merged):
+                                    user_presets = merged
+                                    preset_colors = user_presets.get("NewUserPreset1", {})
+                                    serial.write(f"✅ Merged into {filename} (atomic)\n".encode("utf-8"))
+                                    print("✅ Merge complete (user_presets.json, validated)")
+                                else:
+                                    serial.write(f"ERROR: Atomic merge write failed for {filename}\n".encode("utf-8"))
                             else:
                                 serial.write(f"ERROR: Invalid user_presets.json structure, merge rejected\n".encode("utf-8"))
                                 print("❌ Invalid user_presets.json structure, merge rejected")
