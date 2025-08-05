@@ -1,5 +1,5 @@
 # pin_detect.py v2.3.1
-__version__ = "3.2"
+__version__ = "3.5"
 
 def get_version():
     return __version__
@@ -108,7 +108,7 @@ def save_detected_pin(config_path, button_name, pin_name):
             config = json.load(f)
         config[button_name] = pin_name
         with open(config_path, "w") as f:
-            json.dump(config, f)
+            json.dump(config, f, indent=2)
         print(f"[PIN DETECT] Saved {button_name}: {pin_name} to config")
         microcontroller.reset()
     except Exception as e:

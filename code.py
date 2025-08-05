@@ -1,13 +1,13 @@
 FIRMWARE_VERSIONS = {
-    "code.py": "3.2",
-    "hardware.py": "3.2",
-    "utils.py": "3.2",
-    "gamepad.py": "3.2",
-    "serial_handler.py": "3.2",
-    "pin_detect.py": "3.2",
-    "boot.py": "3.2",
-    "demo_routine.py": "3.2",
-    "demo_state.py": "3.2"
+    "code.py": "3.5",
+    "hardware.py": "3.5",
+    "utils.py": "3.5",
+    "gamepad.py": "3.5",
+    "serial_handler.py": "3.5",
+    "pin_detect.py": "3.5",
+    "boot.py": "3.5",
+    "demo_routine.py": "3.5",
+    "demo_state.py": "3.5"
 }
 
 def get_firmware_versions():
