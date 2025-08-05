@@ -1,5 +1,5 @@
 # boot.py
-__version__ = "3.2"
+__version__ = "3.3"
 
 def get_version():
     return __version__
@@ -197,7 +197,7 @@ def merge_config_file(update_path, target_path, log_file_path):
         
         # Write merged config
         with open(target_path, 'w') as f:
-            json.dump(merged_config, f, indent=2)
+            json.dump(merged_config, f)
         
         # Log merge results
         if new_settings:
@@ -344,16 +344,68 @@ def process_firmware_updates():
                             write_log(f"🔍 DEBUG: Standard file replacement", log_file_path)
                             write_log(f"🔍 DEBUG: Reading from: {update_path}", log_file_path)
                             
-                            # Read update file
-                            with open(update_path, 'rb') as update_file:
-                                content = update_file.read()
-                            write_log(f"🔍 DEBUG: Read {len(content)} bytes", log_file_path)
-                            
-                            write_log(f"🔍 DEBUG: Writing to: {target_path}", log_file_path)
-                            # Write to target location (overwrite)
-                            with open(target_path, 'wb') as target_file:
-                                target_file.write(content)
-                            write_log(f"🔍 DEBUG: Write completed", log_file_path)
+                            # Check file size to determine reading strategy
+                            try:
+                                import os
+                                file_size = os.stat(update_path)[6]  # File size in bytes
+                                write_log(f"🔍 DEBUG: File size: {file_size} bytes", log_file_path)
+                                
+                                if file_size > 30000:  # Files larger than 30KB use chunked reading
+                                    write_log(f"🧠 DEBUG: Using chunked reading for large file ({file_size} bytes)", log_file_path)
+                                    
+                                    # Memory-efficient chunked file copy
+                                    write_log(f"🔍 DEBUG: Writing to: {target_path}", log_file_path)
+                                    chunk_size = 1024  # 1KB chunks
+                                    bytes_copied = 0
+                                    
+                                    with open(update_path, 'rb') as update_file:
+                                        with open(target_path, 'wb') as target_file:
+                                            while True:
+                                                chunk = update_file.read(chunk_size)
+                                                if not chunk:
+                                                    break
+                                                target_file.write(chunk)
+                                                bytes_copied += len(chunk)
+                                                
+                                                # Progress logging every 10KB
+                                                if bytes_copied % 10240 == 0:
+                                                    write_log(f"🔍 DEBUG: Copied {bytes_copied}/{file_size} bytes", log_file_path)
+                                                
+                                                # Yield control and cleanup every 5KB to prevent memory buildup
+                                                if bytes_copied % 5120 == 0:
+                                                    import gc
+                                                    gc.collect()
+                                    
+                                    write_log(f"🔍 DEBUG: Chunked write completed ({bytes_copied} bytes)", log_file_path)
+                                else:
+                                    # Small files - use original method
+                                    write_log(f"🔍 DEBUG: Using standard reading for small file ({file_size} bytes)", log_file_path)
+                                    
+                                    # Read update file
+                                    with open(update_path, 'rb') as update_file:
+                                        content = update_file.read()
+                                    write_log(f"🔍 DEBUG: Read {len(content)} bytes", log_file_path)
+                                    
+                                    write_log(f"🔍 DEBUG: Writing to: {target_path}", log_file_path)
+                                    # Write to target location (overwrite)
+                                    with open(target_path, 'wb') as target_file:
+                                        target_file.write(content)
+                                    write_log(f"🔍 DEBUG: Write completed", log_file_path)
+                                
+                            except Exception as file_error:
+                                # Fallback to original method if size check fails
+                                write_log(f"🔍 DEBUG: Size check failed, using fallback: {file_error}", log_file_path)
+                                
+                                # Read update file
+                                with open(update_path, 'rb') as update_file:
+                                    content = update_file.read()
+                                write_log(f"🔍 DEBUG: Read {len(content)} bytes", log_file_path)
+                                
+                                write_log(f"🔍 DEBUG: Writing to: {target_path}", log_file_path)
+                                # Write to target location (overwrite)
+                                with open(target_path, 'wb') as target_file:
+                                    target_file.write(content)
+                                write_log(f"🔍 DEBUG: Write completed", log_file_path)
                             
                             write_log(f"✅ Updated: {filename}", log_file_path)
                             success_count += 1

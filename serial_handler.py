@@ -1,5 +1,5 @@
 # serial_handler.py
-__version__ = "3.2"
+__version__ = "3.3"
 
 def get_version():
     return __version__
@@ -7,8 +7,21 @@ def get_version():
 import json
 import time
 import microcontroller 
+import os
 from utils import hex_to_rgb, load_config
 from hardware import setup_leds, setup_buttons, setup_whammy, resolve_pin
+
+# Helper: ensure parent directory exists before writing
+# Only works for single-level subdirs (e.g. /updates/file.txt)
+def ensure_parent_dir_exists(filepath):
+    dirpath = "/".join(filepath.split("/")[:-1])
+    if dirpath and dirpath != "":
+        try:
+            os.mkdir(dirpath)
+        except OSError as e:
+            # Directory may already exist, ignore EEXIST
+            if not ("exist" in str(e).lower() or getattr(e, 'errno', None) == 17):
+                raise
 
 def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_state, user_presets, preset_colors, buffer, mode, filename, file_lines, gp, update_leds, poll_inputs, joystick_x=None, joystick_y=None, max_bytes=8, start_tilt_wave=None):
     try:
@@ -365,100 +378,168 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                         gc.collect()
                                         print(f"🧠 Triple pre-write cleanup for {filename}: {line_count} lines")
                             
-                            raw = "\n".join(file_lines)
+                            # Memory-efficient file writing - avoid creating large raw strings
                             if filename.endswith(".json"):
-                                parsed = json.loads(raw)
-                                # Validation for user_presets.json
-                                if filename == "/user_presets.json":
-                                    # Only allow if it's a dict of objects with keys that look like user preset names
-                                    if (
-                                        isinstance(parsed, dict) and
-                                        all(
-                                            isinstance(v, dict) and (
-                                                (isinstance(k, str) and (k.lower().startswith("user ") or "preset" in k.lower()))
-                                            )
-                                            for k, v in parsed.items()
-                                        )
-                                    ):
-                                        with open(filename, "w") as f:
-                                            f.write(json.dumps(parsed) + "\n")
-                                        serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                        print("✅ File written successfully (user_presets.json, validated)")
-                                        user_presets = parsed
-                                        preset_colors = user_presets.get("NewUserPreset1", {})
+                                # For JSON files, parse without creating a large intermediate string
+                                try:
+                                    # For large JSON files, write directly without full memory allocation
+                                    line_count = len(file_lines)
+                                    if line_count > 100:  # Large JSON files - avoid memory allocation failures
+                                        print(f"🧠 Memory-safe large JSON processing for {filename}: {line_count} lines")
+                                        
+                                        # Aggressive memory cleanup before processing
+                                        import gc
+                                        gc.collect()
+                                        gc.collect()
+                                        gc.collect()
+                                        
+                                        # For large JSON files, try to parse in smaller chunks
+                                        # First, try to identify the JSON structure without full parsing
+                                        is_valid_structure = True
+                                        
+                                        # Validate structure by checking first and last few lines
+                                        if len(file_lines) > 3:
+                                            first_line = file_lines[0].strip()
+                                            last_line = file_lines[-1].strip()
+                                            
+                                            # Basic JSON structure validation
+                                            if not (first_line.startswith('{') and last_line.endswith('}')):
+                                                is_valid_structure = False
+                                        
+                                        if is_valid_structure:
+                                            # Write the JSON content directly without full parsing for large files
+                                            ensure_parent_dir_exists(filename)
+                                            with open(filename, "w") as f:
+                                                for i, line in enumerate(file_lines):
+                                                    f.write(line)
+                                                    if i < len(file_lines) - 1:
+                                                        f.write("\n")
+                                                    
+                                                    # Cleanup every 20 lines
+                                                    if (i + 1) % 20 == 0:
+                                                        gc.collect()
+                                                f.write("\n")  # Ensure file ends with newline
+                                            
+                                            serial.write(f"✅ File {filename} written (large JSON, direct write)\n".encode("utf-8"))
+                                            print("✅ Large JSON file written successfully (direct write)")
+                                        else:
+                                            serial.write(f"ERROR: Invalid JSON structure in {filename}\n".encode("utf-8"))
+                                            print("❌ Invalid JSON structure detected")
                                     else:
-                                        serial.write(f"ERROR: Invalid user_presets.json structure, write rejected\n".encode("utf-8"))
-                                        print("❌ Invalid user_presets.json structure, write rejected")
-                                elif filename == "/config.json":
-                                    with open(filename, "w") as f:
-                                        f.write(raw + "\n")
-                                    serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                    print("✅ File written successfully")
-                                    if leds:
-                                        leds.deinit()
-                                    for p in buttons.values():
-                                        try:
-                                            p["obj"].deinit()
-                                        except:
-                                            pass
-                                    if whammy:
-                                        try:
-                                            whammy.deinit()
-                                        except:
-                                            pass
-                                    import microcontroller
-                                    microcontroller.reset()
-                                else:
-                                    # Write raw text for other JSON files
-                                    with open(filename, "w") as f:
-                                        f.write(raw + "\n")
-                                    serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                    print("✅ File written successfully")
+                                        # Small JSON files - use full parsing and validation
+                                        raw = "\n".join(file_lines)
+                                        parsed = json.loads(raw)
+                                        
+                                        # Validation for user_presets.json
+                                        if filename == "/user_presets.json":
+                                            # Only allow if it's a dict of objects with keys that look like user preset names
+                                            if (
+                                                isinstance(parsed, dict) and
+                                                all(
+                                                    isinstance(v, dict) and (
+                                                        (isinstance(k, str) and (k.lower().startswith("user ") or "preset" in k.lower()))
+                                                    )
+                                                    for k, v in parsed.items()
+                                                )
+                                            ):
+                                                ensure_parent_dir_exists(filename)
+                                                with open(filename, "w") as f:
+                                                    f.write(json.dumps(parsed) + "\n")
+                                                serial.write(f"✅ File {filename} written\n".encode("utf-8"))
+                                                print("✅ File written successfully (user_presets.json, validated)")
+                                                user_presets = parsed
+                                                preset_colors = user_presets.get("NewUserPreset1", {})
+                                            else:
+                                                serial.write(f"ERROR: Invalid user_presets.json structure, write rejected\n".encode("utf-8"))
+                                                print("❌ Invalid user_presets.json structure, write rejected")
+                                        elif filename == "/config.json":
+                                            ensure_parent_dir_exists(filename)
+                                            with open(filename, "w") as f:
+                                                f.write(json.dumps(parsed) + "\n")
+                                            serial.write(f"✅ File {filename} written\n".encode("utf-8"))
+                                            print("✅ File written successfully")
+                                            if leds:
+                                                leds.deinit()
+                                            for p in buttons.values():
+                                                try:
+                                                    p["obj"].deinit()
+                                                except:
+                                                    pass
+                                            if whammy:
+                                                try:
+                                                    whammy.deinit()
+                                                except:
+                                                    pass
+                                            import microcontroller
+                                            microcontroller.reset()
+                                        else:
+                                            # Write re-serialized JSON for other small JSON files
+                                            ensure_parent_dir_exists(filename)
+                                            with open(filename, "w") as f:
+                                                f.write(json.dumps(parsed) + "\n")
+                                            serial.write(f"✅ File {filename} written\n".encode("utf-8"))
+                                            print("✅ File written successfully")
+                                    
+                                except json.JSONDecodeError as json_error:
+                                    serial.write(f"ERROR: Invalid JSON in {filename}: {json_error}\n".encode("utf-8"))
+                                    print(f"❌ JSON parse error: {json_error}")
+                                except Exception as e:
+                                    serial.write(f"ERROR: Failed to write JSON {filename}: {e}\n".encode("utf-8"))
+                                    print(f"❌ JSON write error: {e}")
                             else:
-                                # Write raw text for non-JSON files with ULTRA-EXTREME chunked approach
-                                if len(raw) > 500:  # ULTRA-LOW threshold for ANY file >500 bytes
-                                    print(f"🧠 Writing file {filename} in ULTRA-EXTREME micro-chunks: {len(raw)} bytes")
+                                # Memory-efficient writing for non-JSON files - NEVER create a large raw string
+                                line_count = len(file_lines)
+                                if line_count > 50:  # Threshold for line-by-line writing (much lower than 500 bytes)
+                                    print(f"🧠 Writing large file {filename} line-by-line: {line_count} lines")
                                     # Maximum pre-write cleanup
                                     import gc
                                     gc.collect()
                                     gc.collect()
                                     gc.collect()  # Triple cleanup
                                     
-                                    # ULTRA-EXTREME: Write in tiny 128-byte chunks with maximum yield points
-                                    chunk_size = 128  # 128-byte micro-chunks (ULTRA-conservative)
+                                    # Write line by line to avoid memory allocation failures
+                                    ensure_parent_dir_exists(filename)
                                     with open(filename, "w") as f:
-                                        for i in range(0, len(raw), chunk_size):
-                                            chunk = raw[i:i + chunk_size]
-                                            f.write(chunk)
-                                            # Cleanup and yield after EVERY micro-chunk
-                                            gc.collect()
-                                            import time
-                                            time.sleep(0.010)  # 10ms yield point for maximum CPU breathing room
+                                        for i, line in enumerate(file_lines):
+                                            f.write(line)
+                                            if i < len(file_lines) - 1:  # Add newline except for last line
+                                                f.write("\n")
                                             
-                                            # Extra cleanup every 2 chunks (256 bytes)
-                                            if i > 0 and i % (chunk_size * 2) == 0:
+                                            # Aggressive cleanup every 10 lines for large files
+                                            if (i + 1) % 10 == 0:
                                                 gc.collect()
-                                                gc.collect()  # Double cleanup every 256 bytes
-                                                time.sleep(0.015)  # 15ms extra yield every 256 bytes
-                                                print(f"🧠 ULTRA-EXTREME cleanup at {i} bytes of {len(raw)}")
-                                            
-                                            # Emergency cleanup every 4 chunks (512 bytes)
-                                            if i > 0 and i % (chunk_size * 4) == 0:
+                                                import time
+                                                time.sleep(0.005)  # 5ms yield every 10 lines
+                                                
+                                            # Extra cleanup every 25 lines
+                                            if (i + 1) % 25 == 0:
+                                                gc.collect()
+                                                gc.collect()  # Double cleanup every 25 lines
+                                                time.sleep(0.010)  # 10ms extra yield every 25 lines
+                                                print(f"🧠 Memory cleanup at line {i + 1}/{line_count}")
+                                                
+                                            # Emergency cleanup every 50 lines
+                                            if (i + 1) % 50 == 0:
                                                 gc.collect()
                                                 gc.collect()
-                                                gc.collect()  # Triple cleanup every 512 bytes
-                                                time.sleep(0.020)  # 20ms emergency yield every 512 bytes
-                                                print(f"🚨 EMERGENCY cleanup at {i} bytes of {len(raw)}")
-                                        f.write("\n")
-                                    print(f"✅ File {filename} written successfully in ULTRA-EXTREME micro-chunks")
+                                                gc.collect()  # Triple cleanup every 50 lines
+                                                time.sleep(0.015)  # 15ms emergency yield every 50 lines
+                                                print(f"🚨 EMERGENCY cleanup at line {i + 1}/{line_count}")
+                                        f.write("\n")  # Ensure file ends with newline
+                                    print(f"✅ File {filename} written successfully line-by-line ({line_count} lines)")
                                 else:
-                                    # Small files still get conservative treatment
+                                    # Small files - write line by line but faster
                                     import gc
                                     gc.collect()
                                     gc.collect()  # Double cleanup even for small files
+                                    ensure_parent_dir_exists(filename)
                                     with open(filename, "w") as f:
-                                        f.write(raw + "\n")
-                                    print(f"✅ Small file {filename} written successfully")
+                                        for i, line in enumerate(file_lines):
+                                            f.write(line)
+                                            if i < len(file_lines) - 1:
+                                                f.write("\n")
+                                        f.write("\n")  # Ensure file ends with newline
+                                    print(f"✅ Small file {filename} written successfully ({line_count} lines)")
                                     
                                 serial.write(f"✅ File {filename} written\n".encode("utf-8"))
 
@@ -552,6 +633,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                     for k, v in merged.items()
                                 )
                             ):
+                                ensure_parent_dir_exists(filename)
                                 with open(filename, "w") as f:
                                     f.write(json.dumps(merged) + "\n")
                                 user_presets = merged
