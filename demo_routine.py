@@ -1,5 +1,5 @@
 # demo_routine.py
-__version__ = "3.9"
+__version__ = "3.9.2"
 
 def get_version():
     return __version__

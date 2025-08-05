@@ -10,11 +10,11 @@ FIRMWARE_VERSIONS = {
     "demo_state.py": "3.9"
 }
 
-# BGG Firmware v3.9 - Smart Acknowledgment System
+# BGG Firmware v3.9.2 - Smart Acknowledgment System
 # - Enhanced device detection and communication
 # - Smart ACK messages for Windows app compatibility
 # - Conditional debug output prevents firmware corruption
-# - Maintains v3.5 stability with communication improvements
+# - Maintains v3.9.2 stability with communication improvements
 
 def get_firmware_versions():
     return FIRMWARE_VERSIONS
