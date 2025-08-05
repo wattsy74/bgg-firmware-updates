@@ -1,56 +1,56 @@
 {
-    "firmware_version":  "3.9.4",
-    "generated_at":  "2025-08-05T20:19:28.108Z",
+    "firmware_version":  "3.9.5",
+    "generated_at":  "2025-08-05T20:25:59.991Z",
     "files":  {
                   "boot.py":  {
-                                  "version":  "3.9.4",
-                                  "checksum":  "c2d0864c2861a3b0fec33d948c3c15cf28940af1a13860a81d24952650f4d5be",
+                                  "version":  "3.9.5",
+                                  "checksum":  "5931f0b509f34f94a9c1ed39012139994baf6aa4e029cbf1a66624168cd42cbe",
                                   "size":  30862,
                                   "algorithm":  "sha256"
                               },
                   "code.py":  {
-                                  "version":  "3.9.4",
-                                  "checksum":  "0083eff3448468cdaa43616fd4b39e236b0df814a7be0149ec27a25a8eaa3fb4",
+                                  "version":  "3.9.5",
+                                  "checksum":  "09079f26bf7d34ac2084a25041759757512887e505e2957ebe820fbe50ca67a6",
                                   "size":  13308,
                                   "algorithm":  "sha256"
                               },
                   "serial_handler.py":  {
-                                            "version":  "3.9.4",
-                                            "checksum":  "0bf7ac00593a043572bb8904619ba1ce25023f913543f2915f4e4e94be13fb45",
+                                            "version":  "3.9.5",
+                                            "checksum":  "e182aee7ede944d6ec4d95ede6b34e27dae716dec799887ec79974f7c07db598",
                                             "size":  49807,
                                             "algorithm":  "sha256"
                                         },
                   "utils.py":  {
-                                   "version":  "3.9.4",
-                                   "checksum":  "e2d1481251315ea066e529bcddd0756cc11bd2d4f5c01866ce11f7d3503d403d",
+                                   "version":  "3.9.5",
+                                   "checksum":  "16f7583e7fa89975f6afbf8c457453e7536e9bc6cc093b9f3d2b87181a5167a2",
                                    "size":  792,
                                    "algorithm":  "sha256"
                                },
                   "hardware.py":  {
-                                      "version":  "3.9.4",
-                                      "checksum":  "784da69546e1a34307d7f4e336a13d8797d762654fe302b159d83a3af4190867",
+                                      "version":  "3.9.5",
+                                      "checksum":  "949ecdf59dd312a5926fec3e2292441bb8566a63a9c239a5b8c8c9c7bbb52bc9",
                                       "size":  1367,
                                       "algorithm":  "sha256"
                                   },
                   "gamepad.py":  {
-                                     "version":  "3.9.4",
-                                     "checksum":  "fefa4557fa59c189a8e167fb7765386152a3ab45648e3eb90e2caa88a9b92edc",
+                                     "version":  "3.9.5",
+                                     "checksum":  "b706dd9c843057e1566a70ff4e1ac662be35a65227cf4052aeb2c64d63076676",
                                      "size":  1152,
                                      "algorithm":  "sha256"
                                  },
                   "config.json":  {
-                                      "version":  "3.9.4",
+                                      "version":  "3.9.5",
                                       "checksum":  "98236d10d88bd9b3db24472521323a187a5b497df73e5d5379c0d3b78939a575",
                                       "size":  1807,
                                       "algorithm":  "sha256"
                                   },
                   "presets.json":  {
-                                       "version":  "3.9.4",
-                                       "checksum":  "2192944450fed678d18f540d3af71b02e8137616e976089391c102073366ca3f",
-                                       "size":  3219,
+                                       "version":  "3.9.5",
+                                       "checksum":  "a939412224fc22047fdb8a3af48f3878e6e3ace042badd7f7dd7192dc12e6c02",
+                                       "size":  5761,
                                        "algorithm":  "sha256"
                                    }
               },
     "update_url":  "https://api.github.com/repos/wattsy74/bgg-firmware-updates/contents/",
-    "release_notes":  "BGG Firmware v3.9.4 - Latest release"
+    "release_notes":  "BGG Firmware v3.9.5 - Latest release"
 }
