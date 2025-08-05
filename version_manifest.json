@@ -1,11 +1,11 @@
 {
   "firmware_version": "3.5",
-  "generated_at": "2025-08-05T10:54:13.909129Z",
+  "generated_at": "2025-08-05T13:03:42.341487Z",
   "files": {
     "boot.py": {
       "version": "3.5",
-      "checksum": "4b33ce4c390f0acc7177715d372776f6ac920bcdac99a19d392481802c303a76",
-      "size": 6778,
+      "checksum": "724c6a763566e1878675bad9742a5e25d3ea7ad9deab390f6961a3d1a5faa453",
+      "size": 27219,
       "algorithm": "sha256"
     },
     "code.py": {
@@ -16,8 +16,8 @@
     },
     "serial_handler.py": {
       "version": "3.5",
-      "checksum": "23f97434eb273347a6975afb435b35b9a5214f3d4636e1e2211971409c45d069",
-      "size": 44168,
+      "checksum": "efd5f8b65dc33c502a730a1c1f4a79b2081c6ef18b0169877bf5e2a08657234e",
+      "size": 45849,
       "algorithm": "sha256"
     },
     "utils.py": {
