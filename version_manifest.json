@@ -40,8 +40,8 @@
                                  },
                   "config.json":  {
                                       "version":  "3.9.11",
-                                      "checksum":  "a165621fad6d6c40d21e5625bd6a91aa7c5d85d84be4aff6e20357958b3fc398",
-                                      "size":  1170,
+                                      "checksum":  "5a5b04b2464ed7b7a38d77d66aec746c51a1febf26859f963f8c715718cfcb54",
+                                      "size":  1671,
                                       "algorithm":  "sha256"
                                   },
                   "presets.json":  {
