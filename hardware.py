@@ -1,5 +1,5 @@
 # hardware.py
-__version__ = "3.9.13"
+__version__ = "3.9.12"
 
 def get_version():
     return __version__
