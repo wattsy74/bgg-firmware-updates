@@ -1,5 +1,5 @@
-# serial_handler.py - High-Speed Streaming Version v3.9.14 (with JSON corruption protection)
-__version__ = "3.9.14"
+# serial_handler.py - High-Speed Streaming Version v3.9.15 (with JSON corruption protection)
+__version__ = "3.9.15"
 
 def get_version():
     return __version__
@@ -118,14 +118,21 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                 buffer = ""
                 print(f"📩 Received: {line}")
                 
-                # Smart acknowledgment system - only for device detection and critical commands
-                # Skip ACKs during file write operations to prevent corruption
+                # Smart acknowledgment system - comprehensive for device detection and communication
+                # Skip ACKs only during file write operations to prevent corruption
                 if mode is None:  # Only send ACKs when not in file write mode
-                    # Device detection and communication commands need ACKs
+                    # Device detection, communication, and control commands need ACKs
                     if (line == "FIRMWARE_READY?" or line == "READY?" or 
                         line == "READVERSION" or line == "READDEVICENAME" or 
                         line == "READUID" or line.startswith("READFILE:") or
-                        line.startswith("READPIN:") or line.startswith("PREVIEWLED:")):
+                        line.startswith("READPIN:") or line.startswith("PREVIEWLED:") or
+                        line == "READWHAMMY" or line == "READJOYSTICK" or
+                        line.startswith("SETLED:") or line == "LEDRESTORE" or
+                        line == "TILTWAVE" or line.startswith("TILTWAVE_ENABLE:") or
+                        line == "DEMO" or line.startswith("DETECTPIN:") or
+                        line.startswith("SAVEPIN:") or line == "CANCELPINDETECT" or
+                        line == "REBOOT" or line == "REBOOTBOOTSEL" or
+                        line.startswith("MKDIR:")):
                         serial.write(f"ACK: {line[:20]}\n".encode("utf-8"))
 
                 # 🎬 Handle DEMO command - run LED demo routine (non-blocking)
@@ -600,7 +607,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                             f.write("\n")
                                     f.write("\n")  # Ensure file ends with newline
                                 serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.14 High-Speed Streaming ⚡")
+                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.15 High-Speed Streaming ⚡")
 
                         except Exception as e:
                             serial.write(f"ERROR: Failed to write {filename}: {e}\n".encode("utf-8"))
@@ -758,7 +765,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 code_content = f.read()
                             # Parse FIRMWARE_VERSIONS dictionary from code.py
                             import re
-                            # Look for "code.py": "3.9.14" in FIRMWARE_VERSIONS
+                            # Look for "code.py": "3.9.15" in FIRMWARE_VERSIONS
                             match = re.search(r'"code\.py":\s*"([^"]+)"', code_content)
                             if match:
                                 overall_version = match.group(1)
