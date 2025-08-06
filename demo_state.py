@@ -1,5 +1,5 @@
 # demo_state.py
-__version__ = "3.9.5"
+__version__ = "3.9.6"
 
 def get_version():
     return __version__
