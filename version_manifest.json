@@ -39,14 +39,14 @@
                                      "algorithm":  "sha256"
                                  },
                   "config.json":  {
-                                      "version":  "3.9.1",
-                                      "checksum":  "1afa515b79b4616defb3888038944dfb535057020a2503fda4f5f881c9a26313",
-                                      "size":  1286,
+                                      "version":  "3.9.9",
+                                      "checksum":  "71d33d2a21c1252c1493662193e533f68c64be8fe57b6986143f43de2db51434",
+                                      "size":  1168,
                                       "algorithm":  "sha256"
                                   },
                   "presets.json":  {
-                                       "version":  "3.9.8",
-                                       "checksum":  "60d268cfceadb055269029cd9cf909ddad40fa08470fab0fde349fbb32454cb8",
+                                       "version":  "3.9.9",
+                                       "checksum":  "ff7cea34d321adbd3e685d7c87fef847fa79017d28b8fc01ae7036976104d1f3",
                                        "size":  11562,
                                        "algorithm":  "sha256"
                                    }
