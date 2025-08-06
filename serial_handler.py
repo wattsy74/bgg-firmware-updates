@@ -1,5 +1,5 @@
-# serial_handler.py - High-Speed Streaming Version v3.9.12 (with JSON corruption protection)
-__version__ = "3.9.12"
+# serial_handler.py - High-Speed Streaming Version v3.9.13 (with JSON corruption protection)
+__version__ = "3.9.13"
 
 def get_version():
     return __version__
@@ -600,7 +600,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                             f.write("\n")
                                     f.write("\n")  # Ensure file ends with newline
                                 serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.12 High-Speed Streaming ⚡")
+                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.13 High-Speed Streaming ⚡")
 
                         except Exception as e:
                             serial.write(f"ERROR: Failed to write {filename}: {e}\n".encode("utf-8"))
