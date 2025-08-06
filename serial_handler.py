@@ -1,5 +1,5 @@
-# serial_handler.py - High-Speed Streaming Version v3.9.12 (with JSON corruption protection)
-__version__ = "3.9.12"
+# serial_handler.py - High-Speed Streaming Version v3.9.14 (with JSON corruption protection)
+__version__ = "3.9.14"
 
 def get_version():
     return __version__
@@ -600,7 +600,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                             f.write("\n")
                                     f.write("\n")  # Ensure file ends with newline
                                 serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.12 High-Speed Streaming ⚡")
+                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.14 High-Speed Streaming ⚡")
 
                         except Exception as e:
                             serial.write(f"ERROR: Failed to write {filename}: {e}\n".encode("utf-8"))
@@ -749,29 +749,24 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                 elif mode is None and line == "READVERSION":
                     print("📖 READVERSION handler entered")
                     try:
-                        # Get overall firmware version from code.py FIRMWARE_VERSIONS
+                        # CRITICAL: Don't import code.py as it causes GPIO conflicts (GP7 in use)
+                        # Instead, read the FIRMWARE_VERSIONS directly from the file
+                        overall_version = __version__  # Default fallback
+                        
                         try:
-                            import code
-                            firmware_versions = code.get_firmware_versions()
-                            overall_version = firmware_versions.get("code.py", __version__)
-                            print(f"📖 Overall firmware version from code.py: {overall_version}")
-                        except (ImportError, AttributeError):
-                            # Fallback to reading code.py file directly
-                            try:
-                                with open("/code.py", "r") as f:
-                                    code_content = f.read()
-                                # Parse FIRMWARE_VERSIONS dictionary from code.py
-                                import re
-                                match = re.search(r'"code\.py":\s*"([^"]+)"', code_content)
-                                if match:
-                                    overall_version = match.group(1)
-                                    print(f"📖 Overall firmware version from /code.py file: {overall_version}")
-                                else:
-                                    overall_version = __version__
-                                    print(f"📖 Fallback to serial_handler version: {overall_version}")
-                            except Exception as file_error:
-                                overall_version = __version__
-                                print(f"📖 File read error, using serial_handler version: {overall_version}")
+                            with open("/code.py", "r") as f:
+                                code_content = f.read()
+                            # Parse FIRMWARE_VERSIONS dictionary from code.py
+                            import re
+                            # Look for "code.py": "3.9.14" in FIRMWARE_VERSIONS
+                            match = re.search(r'"code\.py":\s*"([^"]+)"', code_content)
+                            if match:
+                                overall_version = match.group(1)
+                                print(f"📖 Overall firmware version from /code.py file: {overall_version}")
+                            else:
+                                print(f"📖 No code.py version found, using serial_handler version: {overall_version}")
+                        except Exception as file_error:
+                            print(f"📖 File read error, using serial_handler version: {overall_version}, error: {file_error}")
                         
                         serial.write(f"VERSION:{overall_version}\nEND\n".encode("utf-8"))
                         print(f"✅ Overall firmware version sent: {overall_version}")

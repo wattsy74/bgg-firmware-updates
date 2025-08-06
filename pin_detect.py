@@ -1,5 +1,5 @@
-# pin_detect.py v3.9.12
-__version__ = "3.9.12"
+# pin_detect.py v3.9.14
+__version__ = "3.9.14"
 
 def get_version():
     return __version__
