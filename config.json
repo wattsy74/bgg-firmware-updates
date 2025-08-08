@@ -1,8 +1,8 @@
 {
     "_metadata":  {
-                      "version":  "3.9.15",
+                      "version":  "3.9.16",
                       "description":  "BumbleGum Guitar Controller Configuration",
-                      "lastUpdated":  "2025-08-06"
+                      "lastUpdated":  "2025-08-08"
                   },
     "UP":  "GP2",
     "DOWN":  "GP3",

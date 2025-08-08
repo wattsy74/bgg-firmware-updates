@@ -1,5 +1,5 @@
-# serial_handler.py - High-Speed Streaming Version v3.9.15 (with JSON corruption protection)
-__version__ = "3.9.15"
+# serial_handler.py - High-Speed Streaming Version v3.9.16 (with JSON corruption protection)
+__version__ = "3.9.16"
 
 def get_version():
     return __version__
@@ -607,7 +607,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                             f.write("\n")
                                     f.write("\n")  # Ensure file ends with newline
                                 serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.15 High-Speed Streaming ⚡")
+                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.16 High-Speed Streaming ⚡")
 
                         except Exception as e:
                             serial.write(f"ERROR: Failed to write {filename}: {e}\n".encode("utf-8"))
@@ -765,7 +765,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 code_content = f.read()
                             # Parse FIRMWARE_VERSIONS dictionary from code.py
                             import re
-                            # Look for "code.py": "3.9.15" in FIRMWARE_VERSIONS
+                            # Look for "code.py": "3.9.16" in FIRMWARE_VERSIONS
                             match = re.search(r'"code\.py":\s*"([^"]+)"', code_content)
                             if match:
                                 overall_version = match.group(1)
@@ -797,22 +797,37 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         with open("/boot.py", "r") as f:
                             boot_lines = f.readlines()
                         product_str = None
-                        for l in boot_lines:
+                        print(f"🔍 READDEVICENAME: Searching through {len(boot_lines)} lines in boot.py")
+                        for i, l in enumerate(boot_lines):
+                            original_line = l
                             l = l.strip()
-                            if l.startswith("supervisor.set_usb_identification"):
-                                # Find the first quoted argument after the open paren
-                                parts = l.split(",")
-                                if len(parts) >= 2:
-                                    # The product string is usually the second argument
-                                    prod_part = parts[1].strip()
-                                    # Remove any surrounding quotes
-                                    if prod_part.startswith('"') and prod_part.endswith('"'):
-                                        product_str = prod_part[1:-1]
-                                    elif prod_part.startswith("'") and prod_part.endswith("'"):
-                                        product_str = prod_part[1:-1]
-                                    else:
-                                        product_str = prod_part
+                            print(f"🔍 Line {i}: {repr(original_line)}")
+                            if "usb_hid.set_interface_name" in l:
+                                print(f"🎯 Found usb_hid.set_interface_name on line {i}: {repr(l)}")
+                                # Simple string parsing to find quoted strings
+                                # Look for strings in quotes (either single or double)
+                                quote_chars = ['"', "'"]
+                                found_strings = []
+                                for quote_char in quote_chars:
+                                    if quote_char in l:
+                                        parts = l.split(quote_char)
+                                        # Quoted strings will be at odd indices (1, 3, 5, etc.)
+                                        for j in range(1, len(parts), 2):
+                                            if parts[j].strip():  # Not empty
+                                                found_strings.append(parts[j])
+                                                print(f"🔍 Found quoted string with {quote_char}: {repr(parts[j])}")
+                                
+                                print(f"🔍 All found strings: {found_strings}")
+                                if found_strings:
+                                    # Take the first non-empty quoted string as the device name
+                                    product_str = found_strings[0]
+                                    print(f"🎯 Using product string: {repr(product_str)}")
                                     break
+                                else:
+                                    print("⚠️ No quoted strings found in usb_hid line")
+                            elif "usb_hid" in l:
+                                print(f"🔍 Found usb_hid (but not set_interface_name): {repr(l)}")
+                        print(f"🔍 Final product_str: {repr(product_str)}")
                         prefix = "BumbleGum Guitars - "
                         if product_str and prefix in product_str:
                             device_name = product_str.split(prefix, 1)[1].strip()
