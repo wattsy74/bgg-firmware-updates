@@ -1,5 +1,5 @@
-# serial_handler.py - High-Speed Streaming Version v3.9.16 (with JSON corruption protection)
-__version__ = "3.9.16"
+# serial_handler.py - High-Speed Streaming Version v3.9.17 (with JSON corruption protection)
+__version__ = "3.9.17"
 
 def get_version():
     return __version__
@@ -486,7 +486,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     if line == "END":
                         # CRITICAL FIX: Send acknowledgment IMMEDIATELY before file operations
                         # This ensures Windows app gets success message even if file close fails
-                        print(f"🆕 NEW VERSION v3.9.16 - Processing END for {filename} in write_stream mode")
+                        print(f"🆕 NEW VERSION v3.9.17 - Processing END for {filename} in write_stream mode")
                         print(f"🐛 DEBUG: Starting END processing at {time.monotonic()}")
                         try:
                             # Send completion message FIRST - before any potentially failing operations
@@ -655,7 +655,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                             f.write("\n")
                                     f.write("\n")  # Ensure file ends with newline
                                 serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.16 High-Speed Streaming ⚡")
+                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.17 High-Speed Streaming ⚡")
 
                         except Exception as e:
                             serial.write(f"ERROR: Failed to write {filename}: {e}\n".encode("utf-8"))
@@ -813,7 +813,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 code_content = f.read()
                             # Parse FIRMWARE_VERSIONS dictionary from code.py
                             import re
-                            # Look for "code.py": "3.9.16" in FIRMWARE_VERSIONS
+                            # Look for "code.py": "3.9.17" in FIRMWARE_VERSIONS
                             match = re.search(r'"code\.py":\s*"([^"]+)"', code_content)
                             if match:
                                 overall_version = match.group(1)
