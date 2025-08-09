@@ -659,4 +659,4 @@ else:
     storage.disable_usb_drive()
     # Firmware updates work via serial protocol with automatic processing at boot
 
-print(f"🎸 BGG Guitar Controller v{__version__} boot complete!")
+print(f"BGG Guitar Controller v{__version__} boot complete!")

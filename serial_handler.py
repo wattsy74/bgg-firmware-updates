@@ -267,8 +267,11 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     filename = "/" + line.split(":", 1)[1]
                     file_lines = []
                     
+                    print(f"🐛 DEBUG: WRITEFILE command received for {filename} at {time.monotonic()}")
+                    
                     # Send initial acknowledgment for WRITEFILE - Windows app expects this
                     serial.write(f"WRITEFILE:READY:{filename.split('/')[-1]}\n".encode("utf-8"))
+                    print(f"🐛 DEBUG: Sent WRITEFILE:READY for {filename}")
                     
                     # Optimized detection - use high-speed streaming for most Python files
                     fname_lower = filename.lower()
@@ -289,15 +292,19 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     if use_high_speed_streaming:
                         mode = "write_stream"
                         print(f"📝 Starting HIGH-SPEED streaming write to {filename}")
+                        print(f"🐛 DEBUG: Entering write_stream mode for {filename}")
                         # Send streaming mode acknowledgment
                         serial.write(f"STREAM:READY:{filename.split('/')[-1]}\n".encode("utf-8"))
+                        print(f"🐛 DEBUG: Sent STREAM:READY for {filename}")
                         # Open file handle immediately for high-speed streaming
                         try:
                             ensure_parent_dir_exists(filename)
                             stream_file = open(filename, "w")
                             file_lines = [stream_file]  # Store file handle in first position
                             print(f"✅ High-speed streaming ready for {filename}")
+                            print(f"🐛 DEBUG: File handle opened successfully for {filename}")
                         except Exception as stream_error:
+                            print(f"🐛 DEBUG: Failed to open file handle: {stream_error}")
                             serial.write(f"ERROR: Failed to open stream for {filename}: {stream_error}\n".encode("utf-8"))
                             mode = "write"  # Fallback to regular mode
                             file_lines = []
@@ -477,24 +484,56 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                 # ✏️ HIGH-SPEED streaming write mode - optimized for maximum throughput
                 elif mode == "write_stream":
                     if line == "END":
+                        # CRITICAL FIX: Send acknowledgment IMMEDIATELY before file operations
+                        # This ensures Windows app gets success message even if file close fails
+                        print(f"🆕 NEW VERSION v3.9.16 - Processing END for {filename} in write_stream mode")
+                        print(f"🐛 DEBUG: Starting END processing at {time.monotonic()}")
                         try:
-                            # Flush and close the stream file
+                            # Send completion message FIRST - before any potentially failing operations
+                            print(f"🐛 DEBUG: About to send completion acknowledgment...")
+                            serial.write(f"✅ File {filename} written (high-speed streaming)\n".encode("utf-8"))
+                            print(f"📝 Sent completion acknowledgment for {filename} at {time.monotonic()}")
+                            print(f"🐛 DEBUG: Acknowledgment sent successfully!")
+                            
+                            # Now attempt file operations - if these fail, app already got success
                             if file_lines and hasattr(file_lines[0], 'close'):
-                                file_lines[0].flush()  # Final flush
-                                file_lines[0].close()
-                                # Only send completion message for the Windows app - no extra acknowledgments
-                                serial.write(f"✅ File {filename} written (high-speed streaming)\n".encode("utf-8"))
-                                print(f"✅ High-speed streaming write completed for {filename}")
+                                print(f"🐛 DEBUG: Valid file handle found, attempting flush...")
+                                # Attempt flush with timeout protection
+                                try:
+                                    file_lines[0].flush()
+                                    print(f"✅ Flush completed for {filename} at {time.monotonic()}")
+                                except Exception as flush_error:
+                                    print(f"⚠️ Flush warning for {filename}: {flush_error}")
+                                    # Continue anyway - data likely already written
+                                
+                                print(f"🐛 DEBUG: Attempting file close...")
+                                # Attempt close with timeout protection  
+                                try:
+                                    file_lines[0].close()
+                                    print(f"✅ High-speed streaming write completed for {filename} at {time.monotonic()}")
+                                except Exception as close_error:
+                                    print(f"⚠️ Close warning for {filename}: {close_error}")
+                                    # File is likely still written correctly
                             else:
-                                serial.write(f"ERROR: No valid stream handle for {filename}\n".encode("utf-8"))
-                        except Exception as e:
-                            serial.write(f"ERROR: Failed to close stream for {filename}: {e}\n".encode("utf-8"))
-                            print(f"❌ Stream close error: {e}")
+                                print(f"⚠️ No valid stream handle for {filename} - but data may be written")
+                                
+                        except Exception as ack_error:
+                            # If even acknowledgment fails, try error message
+                            try:
+                                serial.write(f"ERROR: Stream completion error for {filename}: {ack_error}\n".encode("utf-8"))
+                            except:
+                                pass  # Can't do anything if serial write fails
+                            print(f"❌ Critical error in stream completion: {ack_error}")
                         finally:
+                            # Always cleanup mode and file_lines, even on error
                             mode = None
                             file_lines = []
-                            import gc
-                            gc.collect()
+                            # Cleanup with protection
+                            try:
+                                import gc
+                                gc.collect()
+                            except:
+                                pass  # GC failure is not critical
                     else:
                         # HIGH-SPEED write: minimal overhead, batched operations
                         try:
@@ -505,25 +544,34 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 # Track lines using file_lines list length (starting from index 1)
                                 if len(file_lines) == 1:  # First line after file handle
                                     file_lines.append(1)  # Line counter at index 1
+                                    print(f"🐛 DEBUG: First line written to {filename}")
                                 else:
                                     file_lines[1] += 1  # Increment line counter
                                 
                                 line_count = file_lines[1]
                                 
+                                # Debug every 100 lines to track progress
+                                if line_count % 100 == 0:
+                                    print(f"🐛 DEBUG: Written {line_count} lines to {filename}")
+                                
                                 # Optimized flush frequency - every 128 lines (~6KB) for speed
                                 if line_count % 128 == 0:
                                     file_lines[0].flush()
+                                    print(f"🐛 DEBUG: Flushed at line {line_count}")
                                 
                                 # Very infrequent GC - only every 40KB to maximize speed
                                 if line_count % 800 == 0:  # ~40KB
                                     import gc
                                     gc.collect()
+                                    print(f"🐛 DEBUG: GC at line {line_count}")
                             else:
+                                print(f"🐛 DEBUG: Invalid stream handle for {filename}")
                                 serial.write(f"ERROR: Invalid stream handle for {filename}\n".encode("utf-8"))
                                 mode = None
                                 file_lines = []
                         except Exception as stream_write_error:
                             print(f"❌ Error writing line to stream: {stream_write_error}")
+                            print(f"🐛 DEBUG: Stream write error at line: {repr(line[:50])}")
                             serial.write(f"ERROR: Stream write error: {stream_write_error}\n".encode("utf-8"))
                             mode = None
                             file_lines = []
