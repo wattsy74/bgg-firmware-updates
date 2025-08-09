@@ -1,5 +1,5 @@
 {
-    "firmware_version":  "3.9.18",
+    "firmware_version":  "3.9.19",
     "generated_at":  "2025-08-06T17:45:41.000000Z",
     "files":  {
                   "boot.py":  {
@@ -39,18 +39,18 @@
                                      "algorithm":  "sha256"
                                  },
                   "config.json":  {
-                                      "version":  "3.9.18",
-                                      "checksum":  "b78ed20e24db3f497f2cd23d64395fbf2268aad6f78ef0b743199e95446ab163",
+                                      "version":  "3.9.19",
+                                      "checksum":  "e5de50801a451f0c5f531b03510dbb88631c5705e9e231139b449186b1ad6697",
                                       "size":  1671,
                                       "algorithm":  "sha256"
                                   },
                   "presets.json":  {
-                                       "version":  "3.9.18",
-                                       "checksum":  "da4c2b5f9828459f3dd8c21ef15fea98a7a75c938b1f9bbe6e7216ccd338504d",
+                                       "version":  "3.9.19",
+                                       "checksum":  "cbd26b47db156d2e9cba6f08dd2be4d8af2ddb29d16c9e2a6e7c199441fd6d9e",
                                        "size":  11563,
                                        "algorithm":  "sha256"
                                    }
               },
     "update_url":  "https://api.github.com/repos/wattsy74/bgg-firmware-updates/contents/",
-    "release_notes":  "BGG Firmware v3.9.18 - Latest release"
+    "release_notes":  "BGG Firmware v3.9.19 - Latest release"
 }

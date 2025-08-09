@@ -1,5 +1,5 @@
 # utils.py
-__version__ = "3.9.18"
+__version__ = "3.9.19"
 
 def get_version():
     return __version__
