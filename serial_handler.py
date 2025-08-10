@@ -11,6 +11,57 @@ import os
 from utils import hex_to_rgb, load_config
 from hardware import setup_leds, setup_buttons, setup_whammy, resolve_pin
 
+# ===== SERIAL OPERATION LED INDICATORS =====
+# Global variables to store LED states during serial operations
+_serial_indicator_active = False
+_saved_led_states = None
+
+def start_serial_indicator(leds, operation_type):
+    """
+    Start LED indicator for serial operations.
+    operation_type: 'read' for green strum LEDs, 'write' for red strum LEDs
+    """
+    global _serial_indicator_active, _saved_led_states
+    
+    if not leds or _serial_indicator_active:
+        return
+    
+    # Save current LED states for both strum LEDs (indices 0 and 1)
+    _saved_led_states = [tuple(leds[0]), tuple(leds[1])]
+    _serial_indicator_active = True
+    
+    # Set indicator colors based on operation type
+    if operation_type == 'read':
+        # Green for read operations
+        leds[0] = (0, 255, 0)  # Strum up - bright green
+        leds[1] = (0, 255, 0)  # Strum down - bright green
+    else:  # write
+        # Red for write operations
+        leds[0] = (255, 0, 0)  # Strum up - bright red
+        leds[1] = (255, 0, 0)  # Strum down - bright red
+    
+    leds.show()
+    print(f"🔦 Serial {operation_type} indicator started")
+
+def stop_serial_indicator(leds):
+    """
+    Stop LED indicator and restore original LED states.
+    """
+    global _serial_indicator_active, _saved_led_states
+    
+    if not leds or not _serial_indicator_active:
+        return
+    
+    # Restore original LED states
+    if _saved_led_states:
+        leds[0] = _saved_led_states[0]
+        leds[1] = _saved_led_states[1]
+        leds.show()
+    
+    _serial_indicator_active = False
+    _saved_led_states = None
+    print("🔦 Serial indicator stopped - LED states restored")
+
 # Helper: ensure parent directory exists before writing
 # Only works for single-level subdirs (e.g. /updates/file.txt)
 def ensure_parent_dir_exists(filepath):
@@ -225,6 +276,10 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                 # 🧾 Handle READFILE commands
                 if mode is None and line.startswith("READFILE:"):
                     filename = "/" + line.split(":", 1)[1]
+                    
+                    # Start read indicator (green strum LEDs)
+                    start_serial_indicator(leds, 'read')
+                    
                     try:
                         # Send START_<FILENAME> marker
                         fname = filename.split("/")[-1]
@@ -246,6 +301,9 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         # On error, still send END_<FILENAME> for protocol consistency
                         fname = filename.split("/")[-1]
                         serial.write(f"ERROR: {e}\nEND_{fname}\n".encode("utf-8"))
+                    finally:
+                        # Always stop read indicator
+                        stop_serial_indicator(leds)
                 # 🎸 Handle READWHAMMY command
                 elif mode is None and line == "READWHAMMY":
                     if whammy:
@@ -268,6 +326,9 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     file_lines = []
                     
                     print(f"🐛 DEBUG: WRITEFILE command received for {filename} at {time.monotonic()}")
+                    
+                    # Start write indicator (red strum LEDs)
+                    start_serial_indicator(leds, 'write')
                     
                     # Send initial acknowledgment for WRITEFILE - Windows app expects this
                     serial.write(f"WRITEFILE:READY:{filename.split('/')[-1]}\n".encode("utf-8"))
@@ -528,6 +589,10 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                             # Always cleanup mode and file_lines, even on error
                             mode = None
                             file_lines = []
+                            
+                            # Stop write indicator
+                            stop_serial_indicator(leds)
+                            
                             # Cleanup with protection
                             try:
                                 import gc
@@ -664,6 +729,10 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                             # Always cleanup mode and file_lines, even on error
                             mode = None
                             file_lines = []
+                            
+                            # Stop write indicator
+                            stop_serial_indicator(leds)
+                            
                             # Final cleanup
                             import gc
                             gc.collect()
@@ -719,6 +788,9 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         except Exception as e:
                             serial.write(f"ERROR: {e}\n".encode("utf-8"))
                             print("❌ Merge failed:", e)
+                        
+                        # Stop write indicator and cleanup
+                        stop_serial_indicator(leds)
                         mode = None
                         file_lines = []
                     else:
