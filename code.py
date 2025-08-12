@@ -1,20 +1,20 @@
 FIRMWARE_VERSIONS = {
-    "code.py": "3.9.20",
-    "hardware.py": "3.9.20",
-    "utils.py": "3.9.20",
-    "gamepad.py": "3.9.20",
-    "serial_handler.py": "3.9.20",
-    "pin_detect.py": "3.9.20",
-    "boot.py": "3.9.20",
-    "demo_routine.py": "3.9.20",
-    "demo_state.py": "3.9.20"
+    "code.py": "3.9.22",
+    "hardware.py": "3.9.22",
+    "utils.py": "3.9.22",
+    "gamepad.py": "3.9.22",
+    "serial_handler.py": "3.9.22",
+    "pin_detect.py": "3.9.22",
+    "boot.py": "3.9.22",
+    "demo_routine.py": "3.9.22",
+    "demo_state.py": "3.9.22"
 }
 
-# BGG Firmware v3.9.20 - Smart Acknowledgment System
+# BGG Firmware v3.9.22 - Smart Acknowledgment System
 # - Enhanced device detection and communication
 # - Smart ACK messages for Windows app compatibility
 # - Conditional debug output prevents firmware corruption
-# - Maintains v3.9.20 stability with communication improvements
+# - Maintains v3.9.22 stability with communication improvements
 
 def get_firmware_versions():
     return FIRMWARE_VERSIONS
@@ -24,13 +24,13 @@ try:
     from demo_routine import run_demo_generator
     demo_routine_available = True
 except ImportError:
-    print("⚠️ demo_routine.py not found - demo functionality disabled")
+    print("demo_routine.py not found - demo functionality disabled")
     demo_routine_available = False
 try:
     from demo_state import demo_gen
     demo_state_available = True
 except ImportError:
-    print("⚠️ demo_state.py not found - demo functionality disabled")
+    print("demo_state.py not found - demo functionality disabled")
     demo_state_available = False
 import time
 import json
@@ -45,9 +45,9 @@ from serial_handler import handle_serial
 try:
     with open("/config.json", "r") as f:
         raw_config = json.load(f)
-    print("✅ config.json loaded")
+    print("config.json loaded")
 except Exception as e:
-    print("❌ Failed to load config.json:", e)
+    print("Failed to load config.json:", e)
     raw_config = {}
 
 config = load_config(raw_config, resolve_pin)
@@ -229,7 +229,7 @@ try:
         user_presets = json.load(f)
     preset_colors = user_presets.get("NewUserPreset1", {})
 except Exception as e:
-    print("⚠️ Could not load user presets:", e)
+    print("Could not load user presets:", e)
 
 BUTTON_MAP = {
     "GREEN_FRET": 1,

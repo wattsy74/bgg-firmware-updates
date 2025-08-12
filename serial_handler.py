@@ -1,5 +1,5 @@
-# serial_handler.py - High-Speed Streaming Version v3.9.20 (with JSON corruption protection)
-__version__ = "3.9.20"
+# serial_handler.py - High-Speed Streaming Version v3.9.22 (with JSON corruption protection)
+__version__ = "3.9.22"
 
 def get_version():
     return __version__
@@ -41,7 +41,7 @@ def start_serial_indicator(leds, operation_type):
         leds[1] = (255, 0, 0)  # Strum down - bright red
     
     leds.show()
-    print(f"🔦 Serial {operation_type} indicator started")
+    print(f"Serial {operation_type} indicator started")
 
 def stop_serial_indicator(leds):
     """
@@ -60,7 +60,7 @@ def stop_serial_indicator(leds):
     
     _serial_indicator_active = False
     _saved_led_states = None
-    print("🔦 Serial indicator stopped - LED states restored")
+    print("Serial indicator stopped - LED states restored")
 
 # Helper: ensure parent directory exists before writing
 # Only works for single-level subdirs (e.g. /updates/file.txt)
@@ -95,10 +95,10 @@ def make_json_safe(obj, path="root"):
         else:
             # Convert any other type to string representation
             str_repr = str(obj)
-            print(f"🔍 JSON Safety: Converting {type(obj).__name__} to string at {path}: {str_repr[:50]}...")
+            print(f"JSON Safety: Converting {type(obj).__name__} to string at {path}: {str_repr[:50]}...")
             return str_repr
     except Exception as e:
-        print(f"⚠️ JSON Safety error at {path}: {e}")
+        print(f"JSON Safety error at {path}: {e}")
         return f"<error_converting_{type(obj).__name__}>"
 
 # Atomic file write function - prevents corruption during write operations
@@ -130,11 +130,11 @@ def atomic_write_json(filepath, data):
         
         # This should be atomic on most filesystems
         os.rename(temp_path, filepath)
-        print(f"✅ Atomic JSON write completed: {filepath}")
+        print(f"Atomic JSON write completed: {filepath}")
         return True
         
     except Exception as e:
-        print(f"❌ Atomic write failed for {filepath}: {e}")
+        print(f"Atomic write failed for {filepath}: {e}")
         # Clean up temp file if it exists
         try:
             os.remove(temp_path)
@@ -160,14 +160,14 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     
                 char = byte.decode("utf-8")
             except Exception as byte_error:
-                print(f"❌ Error reading/decoding byte: {byte_error}")
+                print(f"Error reading/decoding byte: {byte_error}")
                 # Skip this byte and continue
                 continue
 
             if char == "\n":
                 line = buffer.rstrip("\r\n")
                 buffer = ""
-                print(f"📩 Received: {line}")
+                print(f"Received: {line}")
                 
                 # Smart acknowledgment system - comprehensive for device detection and communication
                 # Skip ACKs only during file write operations to prevent corruption
@@ -186,7 +186,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         line.startswith("MKDIR:")):
                         serial.write(f"ACK: {line[:20]}\n".encode("utf-8"))
 
-                # 🎬 Handle DEMO command - run LED demo routine (non-blocking)
+                # Handle DEMO command - run LED demo routine (non-blocking)
                 if mode is None and line == "DEMO":
                     try:
                         from demo_routine import run_demo_generator
@@ -195,10 +195,10 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         serial.write(b"DEMO:STARTED\n")
                     except ImportError as e:
                         serial.write(b"ERROR: DEMO modules not found\n")
-                        print(f"❌ DEMO import error: {e}")
+                        print(f"DEMO import error: {e}")
                     except Exception as e:
                         serial.write(f"ERROR: DEMO failed: {e}\n".encode("utf-8"))
-                        print(f"❌ DEMO error: {e}")
+                        print(f"DEMO error: {e}")
                     return buffer, mode, filename, file_lines, config, raw_config, leds, buttons, whammy, current_state, user_presets, preset_colors
 
                 # --- Pin Detect Commands ---
@@ -232,7 +232,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     serial.write(b"PINDETECT:CANCELLED\n")
                     return buffer, mode, filename, file_lines, config, raw_config, leds, buttons, whammy, current_state, user_presets, preset_colors
 
-                # 🔦 Preview LED command — always handled
+                # Preview LED command — always handled
                 if line.startswith("PREVIEWLED:"):
                     try:
                         _, led_name, hex_color = line.split(":")
@@ -265,15 +265,15 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                             rgb = hex_to_rgb(hex_color)
                             leds[i] = rgb
                             leds.show()
-                            print("🔍 PREVIEWLED applied")
-                            print(f"➡️ led_name: {led_name}, hex_color: {hex_color}")
-                            print(f"➡️ led_key: {led_key}, index: {i}, rgb: {rgb}")
+                            print("PREVIEWLED applied")
+                            print(f"led_name: {led_name}, hex_color: {hex_color}")
+                            print(f"led_key: {led_key}, index: {i}, rgb: {rgb}")
                         else:
-                            print(f"⚠️ LED not found for key: {led_key}")
+                            print(f"LED not found for key: {led_key}")
                     except Exception as e:
-                        print("⚠️ PREVIEWLED failed:", e)
+                        print("PREVIEWLED failed:", e)
                     return buffer, mode, filename, file_lines, config, raw_config, leds, buttons, whammy, current_state, user_presets, preset_colors
-                # 🧾 Handle READFILE commands
+                # Handle READFILE commands
                 if mode is None and line.startswith("READFILE:"):
                     filename = "/" + line.split(":", 1)[1]
                     
@@ -304,14 +304,14 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     finally:
                         # Always stop read indicator
                         stop_serial_indicator(leds)
-                # 🎸 Handle READWHAMMY command
+                # Handle READWHAMMY command
                 elif mode is None and line == "READWHAMMY":
                     if whammy:
                         serial.write(f"WHAMMY:{whammy.value}\n".encode("utf-8"))
                     else:
                         serial.write(b"WHAMMY:-1\n")
 
-                # 🕹️ Handle READJOYSTICK command
+                # Handle READJOYSTICK command
                 elif mode is None and line == "READJOYSTICK":
                     if joystick_x and joystick_y:
                         x_val = joystick_x.value
@@ -320,19 +320,19 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     else:
                         serial.write(b"JOYSTICK:X:-1:Y:-1\n")
 
-                # 📝 Handle WRITEFILE commands with HIGH-SPEED streaming mode
+                # Handle WRITEFILE commands with HIGH-SPEED streaming mode
                 elif mode is None and line.startswith("WRITEFILE:"):
                     filename = "/" + line.split(":", 1)[1]
                     file_lines = []
                     
-                    print(f"🐛 DEBUG: WRITEFILE command received for {filename} at {time.monotonic()}")
+                    print(f"DEBUG: WRITEFILE command received for {filename} at {time.monotonic()}")
                     
                     # Start write indicator (red strum LEDs)
                     start_serial_indicator(leds, 'write')
                     
                     # Send initial acknowledgment for WRITEFILE - Windows app expects this
                     serial.write(f"WRITEFILE:READY:{filename.split('/')[-1]}\n".encode("utf-8"))
-                    print(f"🐛 DEBUG: Sent WRITEFILE:READY for {filename}")
+                    print(f"DEBUG: Sent WRITEFILE:READY for {filename}")
                     
                     # Optimized detection - use high-speed streaming for most Python files
                     fname_lower = filename.lower()
@@ -352,33 +352,33 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     
                     if use_high_speed_streaming:
                         mode = "write_stream"
-                        print(f"📝 Starting HIGH-SPEED streaming write to {filename}")
-                        print(f"🐛 DEBUG: Entering write_stream mode for {filename}")
+                        print(f"Starting HIGH-SPEED streaming write to {filename}")
+                        print(f"DEBUG: Entering write_stream mode for {filename}")
                         # Send streaming mode acknowledgment
                         serial.write(f"STREAM:READY:{filename.split('/')[-1]}\n".encode("utf-8"))
-                        print(f"🐛 DEBUG: Sent STREAM:READY for {filename}")
+                        print(f"DEBUG: Sent STREAM:READY for {filename}")
                         # Open file handle immediately for high-speed streaming
                         try:
                             ensure_parent_dir_exists(filename)
                             stream_file = open(filename, "w")
                             file_lines = [stream_file]  # Store file handle in first position
-                            print(f"✅ High-speed streaming ready for {filename}")
-                            print(f"🐛 DEBUG: File handle opened successfully for {filename}")
+                            print(f"High-speed streaming ready for {filename}")
+                            print(f"DEBUG: File handle opened successfully for {filename}")
                         except Exception as stream_error:
-                            print(f"🐛 DEBUG: Failed to open file handle: {stream_error}")
+                            print(f"DEBUG: Failed to open file handle: {stream_error}")
                             serial.write(f"ERROR: Failed to open stream for {filename}: {stream_error}\n".encode("utf-8"))
                             mode = "write"  # Fallback to regular mode
                             file_lines = []
                     else:
                         mode = "write"
-                        print(f"📝 Starting regular write to {filename}")
+                        print(f"Starting regular write to {filename}")
 
-                # 🔄 Handle user preset import
+                # Handle user preset import
                 elif mode is None and line == "IMPORTUSER":
                     filename = "/user_presets.json"
                     file_lines = []
                     mode = "merge_user"
-                    print("🔄 Starting IMPORTUSER merge")
+                    print("Starting IMPORTUSER merge")
 
                 # --- Handle READPIN:<key> for button status ---
                 elif mode is None and line.startswith("READPIN:"):
@@ -393,12 +393,12 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         print(f"[DEBUG] Pin not found for {key}")
                         serial.write(f"PIN:{key}:ERR\n".encode("utf-8"))
 
-                # 🌊 Handle TILTWAVE command - trigger blue wave effect
+                # Handle TILTWAVE command - trigger blue wave effect
                 elif mode is None and line == "TILTWAVE":
-                    print("🌊 Triggering tilt wave effect")
+                    print("Triggering tilt wave effect")
                     try:
                         if leds is not None:
-                            print("🌊 Starting exact tilt wave animation")
+                            print("Starting exact tilt wave animation")
                             
                             # Store current LED colors before starting wave
                             stored_colors = [(0, 0, 0)] * len(leds)
@@ -487,14 +487,14 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                             leds.show()
                             
                             serial.write(b"TILTWAVE:STARTED\n")
-                            print("✅ Exact tilt wave animation completed")
+                            print("Exact tilt wave animation completed")
                         else:
                             serial.write(b"ERROR: No LEDs available\n")
                     except Exception as e:
                         serial.write(f"ERROR: TILTWAVE failed: {e}\n".encode("utf-8"))
-                        print(f"❌ TILTWAVE error: {e}")
+                        print(f"TILTWAVE error: {e}")
 
-                # 💡 Handle SETLED:<index>:<r>:<g>:<b> command - set specific LED color
+                # Handle SETLED:<index>:<r>:<g>:<b> command - set specific LED color
                 elif mode is None and line.startswith("SETLED:"):
                     try:
                         parts = line.split(":")
@@ -508,7 +508,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 leds[led_index] = (r, g, b)
                                 leds.show()
                                 serial.write(f"SETLED:{led_index}:OK\n".encode("utf-8"))
-                                print(f"💡 LED {led_index} set to ({r},{g},{b})")
+                                print(f"LED {led_index} set to ({r},{g},{b})")
                             else:
                                 serial.write(f"SETLED:{led_index}:ERR\n".encode("utf-8"))
                         else:
@@ -516,20 +516,20 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                     except Exception as e:
                         serial.write(f"ERROR: SETLED command failed: {e}\n".encode("utf-8"))
 
-                # 💡 Handle LEDRESTORE command - restore normal LED operation
+                # Handle LEDRESTORE command - restore normal LED operation
                 elif mode is None and line == "LEDRESTORE":
                     try:
-                        print("💡 Restoring normal LED operation")
+                        print("Restoring normal LED operation")
                         # Force update of LED states based on current button presses
                         import code
                         code.update_button_states(config, leds, buttons, current_state, user_presets, preset_colors)
                         serial.write(b"LEDRESTORE:OK\n")
-                        print("✅ LED restoration complete")
+                        print("LED restoration complete")
                     except Exception as e:
                         serial.write(f"ERROR: LED restore failed: {e}\n".encode("utf-8"))
-                        print(f"❌ LED restore error: {e}")
+                        print(f"LED restore error: {e}")
 
-                # 🌊 Handle TILTWAVE_ENABLE:<true/false> command
+                # Handle TILTWAVE_ENABLE:<true/false> command
                 elif mode is None and line.startswith("TILTWAVE_ENABLE:"):
                     try:
                         enabled_str = line.split(":", 1)[1].strip().lower()
@@ -538,45 +538,45 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         import code
                         code.tilt_wave_enabled = enabled
                         serial.write(f"TILTWAVE_ENABLE:{enabled}\n".encode("utf-8"))
-                        print(f"🌊 Tilt wave {'enabled' if enabled else 'disabled'}")
+                        print(f"Tilt wave {'enabled' if enabled else 'disabled'}")
                     except Exception as e:
                         serial.write(f"ERROR: Invalid TILTWAVE_ENABLE command: {e}\n".encode("utf-8"))
 
-                # ✏️ HIGH-SPEED streaming write mode - optimized for maximum throughput
+                # HIGH-SPEED streaming write mode - optimized for maximum throughput
                 elif mode == "write_stream":
                     if line == "END":
                         # CRITICAL FIX: Send acknowledgment IMMEDIATELY before file operations
                         # This ensures Windows app gets success message even if file close fails
-                        print(f"🆕 NEW VERSION v3.9.20 - Processing END for {filename} in write_stream mode")
-                        print(f"🐛 DEBUG: Starting END processing at {time.monotonic()}")
+                        print(f"NEW VERSION v3.9.22 - Processing END for {filename} in write_stream mode")
+                        print(f"DEBUG: Starting END processing at {time.monotonic()}")
                         try:
                             # Send completion message FIRST - before any potentially failing operations
-                            print(f"🐛 DEBUG: About to send completion acknowledgment...")
-                            serial.write(f"✅ File {filename} written (high-speed streaming)\n".encode("utf-8"))
-                            print(f"📝 Sent completion acknowledgment for {filename} at {time.monotonic()}")
-                            print(f"🐛 DEBUG: Acknowledgment sent successfully!")
+                            print(f"DEBUG: About to send completion acknowledgment...")
+                            serial.write(f"File {filename} written (high-speed streaming)\n".encode("utf-8"))
+                            print(f"Sent completion acknowledgment for {filename} at {time.monotonic()}")
+                            print(f"DEBUG: Acknowledgment sent successfully!")
                             
                             # Now attempt file operations - if these fail, app already got success
                             if file_lines and hasattr(file_lines[0], 'close'):
-                                print(f"🐛 DEBUG: Valid file handle found, attempting flush...")
+                                print(f"DEBUG: Valid file handle found, attempting flush...")
                                 # Attempt flush with timeout protection
                                 try:
                                     file_lines[0].flush()
-                                    print(f"✅ Flush completed for {filename} at {time.monotonic()}")
+                                    print(f"Flush completed for {filename} at {time.monotonic()}")
                                 except Exception as flush_error:
-                                    print(f"⚠️ Flush warning for {filename}: {flush_error}")
+                                    print(f"Flush warning for {filename}: {flush_error}")
                                     # Continue anyway - data likely already written
                                 
-                                print(f"🐛 DEBUG: Attempting file close...")
+                                print(f"DEBUG: Attempting file close...")
                                 # Attempt close with timeout protection  
                                 try:
                                     file_lines[0].close()
-                                    print(f"✅ High-speed streaming write completed for {filename} at {time.monotonic()}")
+                                    print(f"High-speed streaming write completed for {filename} at {time.monotonic()}")
                                 except Exception as close_error:
-                                    print(f"⚠️ Close warning for {filename}: {close_error}")
+                                    print(f"Close warning for {filename}: {close_error}")
                                     # File is likely still written correctly
                             else:
-                                print(f"⚠️ No valid stream handle for {filename} - but data may be written")
+                                print(f"No valid stream handle for {filename} - but data may be written")
                                 
                         except Exception as ack_error:
                             # If even acknowledgment fails, try error message
@@ -584,7 +584,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 serial.write(f"ERROR: Stream completion error for {filename}: {ack_error}\n".encode("utf-8"))
                             except:
                                 pass  # Can't do anything if serial write fails
-                            print(f"❌ Critical error in stream completion: {ack_error}")
+                            print(f"Critical error in stream completion: {ack_error}")
                         finally:
                             # Always cleanup mode and file_lines, even on error
                             mode = None
@@ -609,7 +609,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 # Track lines using file_lines list length (starting from index 1)
                                 if len(file_lines) == 1:  # First line after file handle
                                     file_lines.append(1)  # Line counter at index 1
-                                    print(f"🐛 DEBUG: First line written to {filename}")
+                                    print(f"DEBUG: First line written to {filename}")
                                 else:
                                     file_lines[1] += 1  # Increment line counter
                                 
@@ -617,31 +617,31 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 
                                 # Debug every 100 lines to track progress
                                 if line_count % 100 == 0:
-                                    print(f"🐛 DEBUG: Written {line_count} lines to {filename}")
+                                    print(f"DEBUG: Written {line_count} lines to {filename}")
                                 
                                 # Optimized flush frequency - every 128 lines (~6KB) for speed
                                 if line_count % 128 == 0:
                                     file_lines[0].flush()
-                                    print(f"🐛 DEBUG: Flushed at line {line_count}")
+                                    print(f"DEBUG: Flushed at line {line_count}")
                                 
                                 # Very infrequent GC - only every 40KB to maximize speed
                                 if line_count % 800 == 0:  # ~40KB
                                     import gc
                                     gc.collect()
-                                    print(f"🐛 DEBUG: GC at line {line_count}")
+                                    print(f"DEBUG: GC at line {line_count}")
                             else:
-                                print(f"🐛 DEBUG: Invalid stream handle for {filename}")
+                                print(f"DEBUG: Invalid stream handle for {filename}")
                                 serial.write(f"ERROR: Invalid stream handle for {filename}\n".encode("utf-8"))
                                 mode = None
                                 file_lines = []
                         except Exception as stream_write_error:
-                            print(f"❌ Error writing line to stream: {stream_write_error}")
-                            print(f"🐛 DEBUG: Stream write error at line: {repr(line[:50])}")
+                            print(f"Error writing line to stream: {stream_write_error}")
+                            print(f"DEBUG: Stream write error at line: {repr(line[:50])}")
                             serial.write(f"ERROR: Stream write error: {stream_write_error}\n".encode("utf-8"))
                             mode = None
                             file_lines = []
 
-                # ✏️ Write mode logic (original memory-accumulating mode for small files)
+                # Write mode logic (original memory-accumulating mode for small files)
                 elif mode == "write":
                     if line == "END":
                         try:
@@ -650,7 +650,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                             line_count = len(file_lines)
                             if line_count > 20:  # Earlier threshold
                                 gc.collect()
-                                print(f"🧠 Pre-write cleanup for {filename}: {line_count} lines")
+                                print(f"Pre-write cleanup for {filename}: {line_count} lines")
                             
                             # Memory-efficient file writing
                             if filename.endswith(".json"):
@@ -671,20 +671,20 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                     ):
                                         ensure_parent_dir_exists(filename)
                                         if atomic_write_json(filename, parsed):
-                                            serial.write(f"✅ File {filename} written (atomic)\n".encode("utf-8"))
-                                            print("✅ File written successfully (user_presets.json, validated)")
+                                            serial.write(f"File {filename} written (atomic)\n".encode("utf-8"))
+                                            print("File written successfully (user_presets.json, validated)")
                                             user_presets = parsed
                                             preset_colors = user_presets.get("NewUserPreset1", {})
                                         else:
                                             serial.write(f"ERROR: Atomic write failed for {filename}\n".encode("utf-8"))
                                     else:
                                         serial.write(f"ERROR: Invalid user_presets.json structure, write rejected\n".encode("utf-8"))
-                                        print("❌ Invalid user_presets.json structure, write rejected")
+                                        print("Invalid user_presets.json structure, write rejected")
                                 elif filename == "/config.json":
                                     ensure_parent_dir_exists(filename)
                                     if atomic_write_json(filename, parsed):
-                                        serial.write(f"✅ File {filename} written (atomic)\n".encode("utf-8"))
-                                        print("✅ Config file written successfully")
+                                        serial.write(f"File {filename} written (atomic)\n".encode("utf-8"))
+                                        print("Config file written successfully")
                                         if leds:
                                             leds.deinit()
                                         for p in buttons.values():
@@ -705,8 +705,8 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                     # Write re-serialized JSON for other small JSON files with atomic operations
                                     ensure_parent_dir_exists(filename)
                                     if atomic_write_json(filename, parsed):
-                                        serial.write(f"✅ File {filename} written (atomic)\n".encode("utf-8"))
-                                        print("✅ JSON file written successfully")
+                                        serial.write(f"File {filename} written (atomic)\n".encode("utf-8"))
+                                        print("JSON file written successfully")
                                     else:
                                         serial.write(f"ERROR: Atomic write failed for {filename}\n".encode("utf-8"))
                                     
@@ -719,12 +719,12 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                         if i < len(file_lines) - 1:
                                             f.write("\n")
                                     f.write("\n")  # Ensure file ends with newline
-                                serial.write(f"✅ File {filename} written\n".encode("utf-8"))
-                                print(f"✅ File {filename} written successfully ({line_count} lines) - v3.9.20 High-Speed Streaming ⚡")
+                                serial.write(f"File {filename} written\n".encode("utf-8"))
+                                print(f"File {filename} written successfully ({line_count} lines) - v3.9.22 High-Speed Streaming ⚡")
 
                         except Exception as e:
                             serial.write(f"ERROR: Failed to write {filename}: {e}\n".encode("utf-8"))
-                            print("❌", e)
+                            print("", e)
                         finally:
                             # Always cleanup mode and file_lines, even on error
                             mode = None
@@ -744,9 +744,9 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                             if line_count > 30 and line_count % 20 == 0:  # Cleanup every 20 lines after 30
                                 import gc
                                 gc.collect()
-                                print(f"🧠 Memory cleanup: {line_count} lines for {filename}")
+                                print(f"Memory cleanup: {line_count} lines for {filename}")
                         except Exception as append_error:
-                            print(f"❌ Error appending line to file_lines: {append_error}")
+                            print(f"Error appending line to file_lines: {append_error}")
                             serial.write(f"ERROR: Memory error during file processing: {append_error}\n".encode("utf-8"))
                             mode = None
                             file_lines = []
@@ -778,16 +778,16 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 if atomic_write_json(filename, merged):
                                     user_presets = merged
                                     preset_colors = user_presets.get("NewUserPreset1", {})
-                                    serial.write(f"✅ Merged into {filename} (atomic)\n".encode("utf-8"))
-                                    print("✅ Merge complete (user_presets.json, validated)")
+                                    serial.write(f"Merged into {filename} (atomic)\n".encode("utf-8"))
+                                    print("Merge complete (user_presets.json, validated)")
                                 else:
                                     serial.write(f"ERROR: Atomic merge write failed for {filename}\n".encode("utf-8"))
                             else:
                                 serial.write(f"ERROR: Invalid user_presets.json structure, merge rejected\n".encode("utf-8"))
-                                print("❌ Invalid user_presets.json structure, merge rejected")
+                                print("Invalid user_presets.json structure, merge rejected")
                         except Exception as e:
                             serial.write(f"ERROR: {e}\n".encode("utf-8"))
-                            print("❌ Merge failed:", e)
+                            print("Merge failed:", e)
                         
                         # Stop write indicator and cleanup
                         stop_serial_indicator(leds)
@@ -800,14 +800,14 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                             if len(file_lines) > 25:  # User presets are typically smaller
                                 import gc
                                 gc.collect()
-                                print(f"🧠 Memory cleanup in merge mode: {len(file_lines)} lines")
+                                print(f"Memory cleanup in merge mode: {len(file_lines)} lines")
                         except Exception as merge_append_error:
-                            print(f"❌ Error appending line in merge mode: {merge_append_error}")
+                            print(f"Error appending line in merge mode: {merge_append_error}")
                             serial.write(f"ERROR: Memory error during merge: {merge_append_error}\n".encode("utf-8"))
                             mode = None
                             file_lines = []
 
-                # 🔁 Handle REBOOTBOOTSEL command
+                # Handle REBOOTBOOTSEL command
                 elif mode is None and line == "REBOOTBOOTSEL":
                     try:
                         import microcontroller
@@ -816,8 +816,8 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         microcontroller.reset()
                     except Exception as e:
                         serial.write(f"ERROR: Failed to reboot to BOOTSEL: {e}\n".encode("utf-8"))
-                        print("❌ BOOTSEL reboot failed:", e)
-                # ⏪ Handle REBOOT command
+                        print("BOOTSEL reboot failed:", e)
+                # Handle REBOOT command
                 elif mode is None and line == "REBOOT":
                     try:
                         import microcontroller
@@ -825,19 +825,19 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         microcontroller.reset()
                     except Exception as e:
                         serial.write(f"ERROR: Failed to reboot: {e}\n".encode("utf-8"))
-                        print("❌ Simple reboot failed:", e)
+                        print("Simple reboot failed:", e)
 
-                # 📁 Handle MKDIR command
+                # Handle MKDIR command
                 elif mode is None and line.startswith("MKDIR:"):
-                    print(f"🔍 MKDIR handler entered with line: {line}")
+                    print(f"MKDIR handler entered with line: {line}")
                     try:
                         import os
                         folder_path = line[6:].strip()  # Remove "MKDIR:" prefix
-                        print(f"📁 Creating directory: {folder_path}")
+                        print(f"Creating directory: {folder_path}")
                         # CircuitPython uses os.mkdir(), not os.makedirs()
                         try:
                             os.mkdir(folder_path)
-                            print(f"✅ Created new directory: {folder_path}")
+                            print(f"Created new directory: {folder_path}")
                         except OSError as mkdir_error:
                             # Directory might already exist, which is fine
                             # Check for various "file exists" error patterns across different systems
@@ -849,32 +849,32 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 "cannot create" in error_str or
                                 mkdir_error.errno == 17  # EEXIST errno
                             ):
-                                print(f"📁 Directory already exists: {folder_path}")
+                                print(f"Directory already exists: {folder_path}")
                             else:
                                 # Re-raise for other OS errors
                                 raise mkdir_error
                         serial.write(f"MKDIR:SUCCESS:{folder_path}\n".encode("utf-8"))
-                        print(f"✅ Directory ready: {folder_path}")
+                        print(f"Directory ready: {folder_path}")
                     except Exception as e:
                         serial.write(f"MKDIR:ERROR:{e}\n".encode("utf-8"))
-                        print(f"❌ Failed to create directory: {e}")
+                        print(f"Failed to create directory: {e}")
 
                 # Read cpu.uid and pass back
                 elif mode is None and line == "READUID":
-                    print("🔍 READUID handler entered")
+                    print("READUID handler entered")
                     try:
                         import microcontroller
                         uid_hex = "".join("{:02X}".format(b) for b in microcontroller.cpu.uid)
-                        print(f"🔑 UID: {uid_hex}")
+                        print(f"UID: {uid_hex}")
                         serial.write((uid_hex + "\nEND\n").encode("utf-8"))
-                        print("✅ UID sent over serial")
+                        print("UID sent over serial")
                     except Exception as e:
                         serial.write(f"ERROR: {e}\nEND\n".encode("utf-8"))
-                        print(f"❌ Error sending UID: {e}")
+                        print(f"Error sending UID: {e}")
 
-                # 📖 Handle READVERSION command - return overall firmware version from code.py
+                # Handle READVERSION command - return overall firmware version from code.py
                 elif mode is None and line == "READVERSION":
-                    print("📖 READVERSION handler entered")
+                    print("READVERSION handler entered")
                     try:
                         # CRITICAL: Don't import code.py as it causes GPIO conflicts (GP7 in use)
                         # Instead, read the FIRMWARE_VERSIONS directly from the file
@@ -885,45 +885,45 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                 code_content = f.read()
                             # Parse FIRMWARE_VERSIONS dictionary from code.py
                             import re
-                            # Look for "code.py": "3.9.20" in FIRMWARE_VERSIONS
+                            # Look for "code.py": "3.9.22" in FIRMWARE_VERSIONS
                             match = re.search(r'"code\.py":\s*"([^"]+)"', code_content)
                             if match:
                                 overall_version = match.group(1)
-                                print(f"📖 Overall firmware version from /code.py file: {overall_version}")
+                                print(f"Overall firmware version from /code.py file: {overall_version}")
                             else:
-                                print(f"📖 No code.py version found, using serial_handler version: {overall_version}")
+                                print(f"No code.py version found, using serial_handler version: {overall_version}")
                         except Exception as file_error:
-                            print(f"📖 File read error, using serial_handler version: {overall_version}, error: {file_error}")
+                            print(f"File read error, using serial_handler version: {overall_version}, error: {file_error}")
                         
                         serial.write(f"VERSION:{overall_version}\nEND\n".encode("utf-8"))
-                        print(f"✅ Overall firmware version sent: {overall_version}")
+                        print(f"Overall firmware version sent: {overall_version}")
                     except Exception as e:
                         serial.write(f"ERROR: {e}\nEND\n".encode("utf-8"))
-                        print(f"❌ Error sending version: {e}")
+                        print(f"Error sending version: {e}")
 
-                # ✅ Firmware ready status command
+                # Firmware ready status command
                 elif mode is None and (line == "FIRMWARE_READY?" or line == "READY?"):
                     try:
                         serial.write(b"FIRMWARE_READY:OK\n")
-                        print("✅ FIRMWARE_READY:OK sent over serial")
+                        print("FIRMWARE_READY:OK sent over serial")
                     except Exception as e:
                         serial.write(f"ERROR: {e}\n".encode("utf-8"))
-                        print(f"❌ Error sending FIRMWARE_READY: {e}")
+                        print(f"Error sending FIRMWARE_READY: {e}")
 
-                # 📛 Handle READDEVICENAME command
+                # Handle READDEVICENAME command
                 elif mode is None and line == "READDEVICENAME":
                     try:
                         # Read /boot.py as text and extract the product string
                         with open("/boot.py", "r") as f:
                             boot_lines = f.readlines()
                         product_str = None
-                        print(f"🔍 READDEVICENAME: Searching through {len(boot_lines)} lines in boot.py")
+                        print(f"READDEVICENAME: Searching through {len(boot_lines)} lines in boot.py")
                         for i, l in enumerate(boot_lines):
                             original_line = l
                             l = l.strip()
-                            print(f"🔍 Line {i}: {repr(original_line)}")
+                            print(f"Line {i}: {repr(original_line)}")
                             if "usb_hid.set_interface_name" in l:
-                                print(f"🎯 Found usb_hid.set_interface_name on line {i}: {repr(l)}")
+                                print(f"Found usb_hid.set_interface_name on line {i}: {repr(l)}")
                                 # Simple string parsing to find quoted strings
                                 # Look for strings in quotes (either single or double)
                                 quote_chars = ['"', "'"]
@@ -935,19 +935,19 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                                         for j in range(1, len(parts), 2):
                                             if parts[j].strip():  # Not empty
                                                 found_strings.append(parts[j])
-                                                print(f"🔍 Found quoted string with {quote_char}: {repr(parts[j])}")
+                                                print(f"Found quoted string with {quote_char}: {repr(parts[j])}")
                                 
-                                print(f"🔍 All found strings: {found_strings}")
+                                print(f"All found strings: {found_strings}")
                                 if found_strings:
                                     # Take the first non-empty quoted string as the device name
                                     product_str = found_strings[0]
-                                    print(f"🎯 Using product string: {repr(product_str)}")
+                                    print(f"Using product string: {repr(product_str)}")
                                     break
                                 else:
-                                    print("⚠️ No quoted strings found in usb_hid line")
+                                    print("No quoted strings found in usb_hid line")
                             elif "usb_hid" in l:
-                                print(f"🔍 Found usb_hid (but not set_interface_name): {repr(l)}")
-                        print(f"🔍 Final product_str: {repr(product_str)}")
+                                print(f"Found usb_hid (but not set_interface_name): {repr(l)}")
+                        print(f"Final product_str: {repr(product_str)}")
                         prefix = "BumbleGum Guitars - "
                         if product_str and prefix in product_str:
                             device_name = product_str.split(prefix, 1)[1].strip()
@@ -956,12 +956,12 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                         else:
                             device_name = "Unknown"
                         serial.write((device_name + "\nEND\n").encode("utf-8"))
-                        print(f"✅ Device name sent: {device_name}")
+                        print(f"Device name sent: {device_name}")
                     except Exception as e:
                         serial.write(f"ERROR: {e}\nEND\n".encode("utf-8"))
-                        print(f"❌ Error sending device name: {e}")
+                        print(f"Error sending device name: {e}")
 
-                # ❓ Fallback error for unknown command
+                # Fallback error for unknown command
                 elif mode is None:
                     if line.startswith("READPIN:"):
                         key = line.split(":", 1)[1].strip()
@@ -976,7 +976,7 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
             else:
                 buffer += char
     except Exception as e:
-        print("❌ Serial handler crashed:", e)
+        print("Serial handler crashed:", e)
         serial.write(f"ERROR: Serial crash: {e}\n".encode("utf-8"))
         buffer = ""
         mode = None

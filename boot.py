@@ -1,5 +1,5 @@
-# boot.py v3.9.20 - Smart Acknowledgment System + Enhanced Device Communication
-__version__ = "3.9.20"
+# boot.py v3.9.22 - Smart Acknowledgment System + Enhanced Device Communication
+__version__ = "3.9.22"
 
 def get_version():
     return __version__
@@ -98,14 +98,14 @@ usb_cdc.enable(console=True, data=True)
 try:
     # CircuitPython 8.x and newer method
     supervisor.runtime.autoreload = False
-    print("✅ Auto-reload disabled via supervisor.runtime.autoreload")
+    print("Auto-reload disabled via supervisor.runtime.autoreload")
 except (AttributeError, NameError):
     try:
         # Alternative method for some versions
         supervisor.disable_autoreload()
-        print("✅ Auto-reload disabled via supervisor.disable_autoreload()")
+        print("Auto-reload disabled via supervisor.disable_autoreload()")
     except (AttributeError, NameError):
-        print("⚠️ Auto-reload disable not available - manual reboot control only")
+        print("Auto-reload disable not available - manual reboot control only")
 
 # ===== FIRMWARE UPDATE SYSTEM =====
 # Logging system for tracking update attempts
@@ -134,7 +134,7 @@ def make_json_safe(obj, path="root"):
                 try:
                     safe_dict[k] = make_json_safe(v, f"{path}.{k}")
                 except Exception as e:
-                    write_log(f"⚠️ Skipping corrupted key '{k}' at {path}: {e}", "/updates/update.log")
+                    write_log(f"Skipping corrupted key '{k}' at {path}: {e}", "/updates/update.log")
                     continue
         return safe_dict
     elif isinstance(obj, (list, tuple)):
@@ -143,7 +143,7 @@ def make_json_safe(obj, path="root"):
             try:
                 safe_list.append(make_json_safe(item, f"{path}[{i}]"))
             except Exception as e:
-                write_log(f"⚠️ Skipping corrupted item at {path}[{i}]: {e}", "/updates/update.log")
+                write_log(f"Skipping corrupted item at {path}[{i}]: {e}", "/updates/update.log")
                 continue
         return safe_list
     else:
@@ -165,21 +165,21 @@ def merge_config_file(update_path, target_path, log_file_path):
     try:
         import json
         
-        write_log(f"🔀 Smart merging config file: {update_path} -> {target_path}", log_file_path)
+        write_log(f"Smart merging config file: {update_path} -> {target_path}", log_file_path)
         
         # Load existing config (if it exists)
         existing_config = {}
         try:
             with open(target_path, 'r') as f:
                 existing_config = json.load(f)
-            write_log(f"📖 Loaded existing config with {len(existing_config)} settings", log_file_path)
+            write_log(f"Loaded existing config with {len(existing_config)} settings", log_file_path)
         except (OSError, ValueError) as e:
-            write_log(f"⚠️ No existing config or invalid JSON, creating new: {e}", log_file_path)
+            write_log(f"No existing config or invalid JSON, creating new: {e}", log_file_path)
         
         # Load update config
         with open(update_path, 'r') as f:
             update_config = json.load(f)
-        write_log(f"📥 Loaded update config with {len(update_config)} settings", log_file_path)
+        write_log(f"Loaded update config with {len(update_config)} settings", log_file_path)
         
         # Create backup of existing config
         if existing_config:
@@ -189,9 +189,9 @@ def merge_config_file(update_path, target_path, log_file_path):
                 safe_existing = make_json_safe(existing_config, "backup")
                 with open(backup_path, 'w') as f:
                     f.write(json.dumps(safe_existing))
-                write_log(f"💾 Created sanitized config backup: {backup_path}", log_file_path)
+                write_log(f"Created sanitized config backup: {backup_path}", log_file_path)
             except Exception as e:
-                write_log(f"⚠️ Could not create backup: {e}", log_file_path)
+                write_log(f"Could not create backup: {e}", log_file_path)
         
         # Smart merge logic
         merged_config = existing_config.copy()  # Start with existing settings
@@ -222,34 +222,34 @@ def merge_config_file(update_path, target_path, log_file_path):
                         merged_presets[preset_name] = preset_data
                         new_presets.append(preset_name)
                     else:
-                        write_log(f"🔒 Preserving user preset: {preset_name}", log_file_path)
+                        write_log(f"Preserving user preset: {preset_name}", log_file_path)
                 
                 merged_config[key] = merged_presets
                 if new_presets:
-                    write_log(f"🎮 Added new presets: {new_presets}", log_file_path)
+                    write_log(f"Added new presets: {new_presets}", log_file_path)
             else:
                 # Existing setting - keep user's value
-                write_log(f"🔒 Preserving user setting: {key}", log_file_path)
+                write_log(f"Preserving user setting: {key}", log_file_path)
         
         # CRITICAL: Use atomic operations and data sanitization to prevent JSON corruption
-        write_log("🛡️ Starting atomic write with data sanitization", log_file_path)
+        write_log("Starting atomic write with data sanitization", log_file_path)
         
         # Step 1: Sanitize data for CircuitPython compatibility
         safe_merged_config = make_json_safe(merged_config, "merged_config")
-        write_log(f"✅ Data sanitization complete", log_file_path)
+        write_log(f"Data sanitization complete", log_file_path)
         
         # Step 2: Pre-validate by attempting JSON serialization
         try:
             import json
             test_json = json.dumps(safe_merged_config)
-            write_log(f"✅ JSON validation passed ({len(test_json)} chars)", log_file_path)
+            write_log(f"JSON validation passed ({len(test_json)} chars)", log_file_path)
         except Exception as e:
-            write_log(f"❌ JSON validation failed: {e}", log_file_path)
-            write_log("🔄 Attempting fallback with string conversion", log_file_path)
+            write_log(f"JSON validation failed: {e}", log_file_path)
+            write_log("Attempting fallback with string conversion", log_file_path)
             # Fallback: convert problematic values to strings
             safe_merged_config = make_json_safe(safe_merged_config, "fallback")
             test_json = json.dumps(safe_merged_config)
-            write_log(f"✅ Fallback JSON validation passed ({len(test_json)} chars)", log_file_path)
+            write_log(f"Fallback JSON validation passed ({len(test_json)} chars)", log_file_path)
         
         # Step 3: Atomic write using temporary file + rename
         temp_path = f"{target_path}.tmp"
@@ -258,31 +258,31 @@ def merge_config_file(update_path, target_path, log_file_path):
             with open(temp_path, 'w') as f:
                 f.write(test_json)
                 f.flush()  # Ensure data is written to disk
-            write_log(f"✅ Temporary file written: {temp_path}", log_file_path)
+            write_log(f"Temporary file written: {temp_path}", log_file_path)
             
             # Verify temp file is readable
             with open(temp_path, 'r') as f:
                 verify_json = f.read()
                 json.loads(verify_json)  # Verify it's valid JSON
-            write_log("✅ Temporary file verification passed", log_file_path)
+            write_log("Temporary file verification passed", log_file_path)
             
             # Atomic rename (this is the critical moment)
             import os
             try:
                 os.rename(temp_path, target_path)
-                write_log(f"✅ Atomic rename successful: {target_path}", log_file_path)
+                write_log(f"Atomic rename successful: {target_path}", log_file_path)
             except OSError as rename_error:
                 # Fallback for systems that don't support atomic rename with existing target
                 try:
                     os.remove(target_path)
                     os.rename(temp_path, target_path)
-                    write_log(f"✅ Fallback rename successful: {target_path}", log_file_path)
+                    write_log(f"Fallback rename successful: {target_path}", log_file_path)
                 except Exception as fallback_error:
-                    write_log(f"❌ Rename failed completely: {fallback_error}", log_file_path)
+                    write_log(f"Rename failed completely: {fallback_error}", log_file_path)
                     raise fallback_error
             
         except Exception as atomic_error:
-            write_log(f"❌ Atomic write failed: {atomic_error}", log_file_path)
+            write_log(f"Atomic write failed: {atomic_error}", log_file_path)
             # Clean up temp file if it exists
             try:
                 import os
@@ -293,16 +293,16 @@ def merge_config_file(update_path, target_path, log_file_path):
         
         # Log merge results
         if new_settings:
-            write_log(f"➕ Added new settings: {new_settings}", log_file_path)
+            write_log(f"Added new settings: {new_settings}", log_file_path)
         if updated_settings:
-            write_log(f"🔄 Updated metadata: {updated_settings}", log_file_path)
+            write_log(f"Updated metadata: {updated_settings}", log_file_path)
         
-        write_log(f"✅ Config merge complete: {len(merged_config)} total settings", log_file_path)
+        write_log(f"Config merge complete: {len(merged_config)} total settings", log_file_path)
         return True
         
     except Exception as e:
-        write_log(f"❌ Config merge failed: {e}", log_file_path)
-        write_log(f"🔍 Error details: {type(e).__name__}: {str(e)}", log_file_path)
+        write_log(f"Config merge failed: {e}", log_file_path)
+        write_log(f"Error details: {type(e).__name__}: {str(e)}", log_file_path)
         return False
 
 # Check for pending firmware updates in /updates/ folder at boot
@@ -315,14 +315,14 @@ def process_firmware_updates():
         has_updates = 'updates' in root_files
         if not has_updates:
             # No updates folder = no logging needed, just exit silently
-            print("🔍 No /updates folder found - skipping update processor")
+            print("No /updates folder found - skipping update processor")
             return
     except Exception as e:
-        print(f"⚠️ Could not check for updates folder: {e}")
+        print(f"Could not check for updates folder: {e}")
         return
     
     # Only proceed with logging setup if updates folder exists
-    print("🔄 Found /updates folder - initializing update processor")
+    print("Found /updates folder - initializing update processor")
     
     # Create incremental log file with rollover (keep only last 12 logs)
     log_number = 1
@@ -351,30 +351,30 @@ def process_firmware_updates():
         oldest_log_num = existing_logs[0]
         try:
             os.remove(f'/update_log_{oldest_log_num:03d}.txt')
-            print(f"🗑️ Removed old log file: update_log_{oldest_log_num:03d}.txt")
+            print(f"Removed old log file: update_log_{oldest_log_num:03d}.txt")
         except Exception as e:
-            print(f"⚠️ Could not remove old log: {e}")
+            print(f"Could not remove old log: {e}")
     
     log_file_path = f'/update_log_{log_number:03d}.txt'
     
-    write_log("🔍 Starting update processor with confirmed /updates folder", log_file_path)
-    write_log(f"📝 Using log file: {log_file_path}", log_file_path)
+    write_log("Starting update processor with confirmed /updates folder", log_file_path)
+    write_log(f"Using log file: {log_file_path}", log_file_path)
     if existing_logs:
-        write_log(f"📊 Log management: {len(existing_logs)} existing logs, keeping last 12", log_file_path)
+        write_log(f"Log management: {len(existing_logs)} existing logs, keeping last 12", log_file_path)
     
     try:
         # Process the updates (we already know folder exists)
         update_files = os.listdir('/updates')
-        write_log(f"📦 Found {len(update_files)} update files", log_file_path)
+        write_log(f"Found {len(update_files)} update files", log_file_path)
         
         if update_files:
             # Ensure filesystem is writable for updates
             try:
                 storage.remount("/", readonly=False)
-                write_log("📝 Filesystem remounted as writable", log_file_path)
+                write_log("Filesystem remounted as writable", log_file_path)
             except Exception as e:
-                write_log(f"⚠️ Could not remount filesystem: {e}", log_file_path)
-                write_log("🔄 Attempting updates anyway...", log_file_path)
+                write_log(f"Could not remount filesystem: {e}", log_file_path)
+                write_log("Attempting updates anyway...", log_file_path)
             
             # Create update flag with retry counter to prevent infinite loops
             retry_count = 0
@@ -387,20 +387,20 @@ def process_firmware_updates():
                     retry_count = 0
                 
                 retry_count += 1
-                write_log(f"🔍 Update attempt #{retry_count}", log_file_path)
+                write_log(f"Update attempt #{retry_count}", log_file_path)
                 
                 # Maximum 3 retry attempts to prevent infinite loops
                 if retry_count > 3:
-                    write_log("❌ Maximum retry attempts exceeded, aborting updates", log_file_path)
+                    write_log("Maximum retry attempts exceeded, aborting updates", log_file_path)
                     # Clean up everything to prevent further attempts
                     try:
                         for filename in update_files:
                             os.remove(f'/updates/{filename}')
                         os.rmdir('/updates')
                         os.remove('/update_retry_count.txt')
-                        write_log("🗑️ Cleaned up failed update files", log_file_path)
+                        write_log("Cleaned up failed update files", log_file_path)
                     except Exception as cleanup_e:
-                        write_log(f"⚠️ Cleanup failed: {cleanup_e}", log_file_path)
+                        write_log(f"Cleanup failed: {cleanup_e}", log_file_path)
                     return
                 
                 # Save retry count
@@ -409,15 +409,15 @@ def process_firmware_updates():
                 
                 with open('/updating.flag', 'w') as flag_file:
                     flag_file.write(f'firmware_update_in_progress_attempt_{retry_count}\n')
-                write_log(f"🏁 Update flag created (attempt {retry_count})", log_file_path)
+                write_log(f"Update flag created (attempt {retry_count})", log_file_path)
             except Exception as e:
-                write_log(f"⚠️ Could not create update flag: {e}", log_file_path)
+                write_log(f"Could not create update flag: {e}", log_file_path)
             
             # Move each file from /updates/ to root, with special handling for config files
             success_count = 0
             failed_files = []
             for filename in update_files:
-                write_log(f"🔍 DEBUG: Processing file: {filename}", log_file_path)
+                write_log(f"DEBUG: Processing file: {filename}", log_file_path)
                 try:
                     update_path = f'/updates/{filename}'
                     target_path = f'/{filename}'
@@ -427,32 +427,32 @@ def process_firmware_updates():
                         write_log(f"⚙️ Detected config file, using smart merge", log_file_path)
                         
                         if merge_config_file(update_path, target_path, log_file_path):
-                            write_log(f"✅ Config merged: {filename}", log_file_path)
+                            write_log(f"Config merged: {filename}", log_file_path)
                             success_count += 1
                             
                             # Remove the update file after successful merge
-                            write_log(f"🔍 DEBUG: Removing update file: {update_path}", log_file_path)
+                            write_log(f"DEBUG: Removing update file: {update_path}", log_file_path)
                             os.remove(update_path)
-                            write_log(f"🔍 DEBUG: Update file removed", log_file_path)
+                            write_log(f"DEBUG: Update file removed", log_file_path)
                         else:
-                            write_log(f"❌ Config merge failed: {filename}", log_file_path)
+                            write_log(f"Config merge failed: {filename}", log_file_path)
                             failed_files.append(filename)
                     else:
                         # Standard file replacement for non-config files
-                        write_log(f"🔍 DEBUG: Standard file replacement", log_file_path)
-                        write_log(f"🔍 DEBUG: Reading from: {update_path}", log_file_path)
+                        write_log(f"DEBUG: Standard file replacement", log_file_path)
+                        write_log(f"DEBUG: Reading from: {update_path}", log_file_path)
                         
                         # Check file size to determine reading strategy
                         try:
                             import os
                             file_size = os.stat(update_path)[6]  # File size in bytes
-                            write_log(f"🔍 DEBUG: File size: {file_size} bytes", log_file_path)
+                            write_log(f"DEBUG: File size: {file_size} bytes", log_file_path)
                             
                             if file_size > 30000:  # Files larger than 30KB use chunked reading
-                                write_log(f"🧠 DEBUG: Using chunked reading for large file ({file_size} bytes)", log_file_path)
+                                write_log(f"DEBUG: Using chunked reading for large file ({file_size} bytes)", log_file_path)
                                 
                                 # Memory-efficient chunked file copy
-                                write_log(f"🔍 DEBUG: Writing to: {target_path}", log_file_path)
+                                write_log(f"DEBUG: Writing to: {target_path}", log_file_path)
                                 chunk_size = 1024  # 1KB chunks
                                 bytes_copied = 0
                                 
@@ -467,109 +467,109 @@ def process_firmware_updates():
                                             
                                             # Progress logging every 10KB
                                             if bytes_copied % 10240 == 0:
-                                                write_log(f"🔍 DEBUG: Copied {bytes_copied}/{file_size} bytes", log_file_path)
+                                                write_log(f"DEBUG: Copied {bytes_copied}/{file_size} bytes", log_file_path)
                                             
                                             # Yield control and cleanup every 5KB to prevent memory buildup
                                             if bytes_copied % 5120 == 0:
                                                 import gc
                                                 gc.collect()
                                 
-                                write_log(f"🔍 DEBUG: Chunked write completed ({bytes_copied} bytes)", log_file_path)
+                                write_log(f"DEBUG: Chunked write completed ({bytes_copied} bytes)", log_file_path)
                             else:
                                 # Small files - use original method
-                                write_log(f"🔍 DEBUG: Using standard reading for small file ({file_size} bytes)", log_file_path)
+                                write_log(f"DEBUG: Using standard reading for small file ({file_size} bytes)", log_file_path)
                                 
                                 # Read update file
                                 with open(update_path, 'rb') as update_file:
                                     content = update_file.read()
-                                write_log(f"🔍 DEBUG: Read {len(content)} bytes", log_file_path)
+                                write_log(f"DEBUG: Read {len(content)} bytes", log_file_path)
                                 
-                                write_log(f"🔍 DEBUG: Writing to: {target_path}", log_file_path)
+                                write_log(f"DEBUG: Writing to: {target_path}", log_file_path)
                                 # Write to target location (overwrite)
                                 with open(target_path, 'wb') as target_file:
                                     target_file.write(content)
-                                write_log(f"🔍 DEBUG: Write completed", log_file_path)
+                                write_log(f"DEBUG: Write completed", log_file_path)
                             
                         except Exception as file_error:
                             # Fallback to original method if size check fails
-                            write_log(f"🔍 DEBUG: Size check failed, using fallback: {file_error}", log_file_path)
+                            write_log(f"DEBUG: Size check failed, using fallback: {file_error}", log_file_path)
                             
                             # Read update file
                             with open(update_path, 'rb') as update_file:
                                 content = update_file.read()
-                            write_log(f"🔍 DEBUG: Read {len(content)} bytes", log_file_path)
+                            write_log(f"DEBUG: Read {len(content)} bytes", log_file_path)
                             
-                            write_log(f"🔍 DEBUG: Writing to: {target_path}", log_file_path)
+                            write_log(f"DEBUG: Writing to: {target_path}", log_file_path)
                             # Write to target location (overwrite)
                             with open(target_path, 'wb') as target_file:
                                 target_file.write(content)
-                            write_log(f"🔍 DEBUG: Write completed", log_file_path)
+                            write_log(f"DEBUG: Write completed", log_file_path)
                         
-                        write_log(f"✅ Updated: {filename}", log_file_path)
+                        write_log(f"Updated: {filename}", log_file_path)
                         success_count += 1
                         
                         # Remove the update file only after successful write
-                        write_log(f"🔍 DEBUG: Removing update file: {update_path}", log_file_path)
+                        write_log(f"DEBUG: Removing update file: {update_path}", log_file_path)
                         os.remove(update_path)
-                        write_log(f"🔍 DEBUG: Update file removed", log_file_path)
+                        write_log(f"DEBUG: Update file removed", log_file_path)
                     
                 except Exception as e:
-                    write_log(f"❌ Failed to update {filename}: {e}", log_file_path)
-                    write_log(f"🔍 DEBUG: Error details: {type(e).__name__}: {str(e)}", log_file_path)
+                    write_log(f"Failed to update {filename}: {e}", log_file_path)
+                    write_log(f"DEBUG: Error details: {type(e).__name__}: {str(e)}", log_file_path)
                     failed_files.append(filename)
                     # Continue with other files, don't abort entire update
             
             # Clean up only if ALL files were successfully updated
             if success_count == len(update_files):
                 try:
-                    write_log("🔍 DEBUG: All files successful, removing /updates directory", log_file_path)
+                    write_log("DEBUG: All files successful, removing /updates directory", log_file_path)
                     os.rmdir('/updates')
-                    write_log("🗑️ Cleaned up /updates/ folder", log_file_path)
+                    write_log("Cleaned up /updates/ folder", log_file_path)
                     # Remove retry counter on complete success
                     try:
                         os.remove('/update_retry_count.txt')
-                        write_log("🔍 DEBUG: Retry counter reset", log_file_path)
+                        write_log("DEBUG: Retry counter reset", log_file_path)
                     except:
                         pass
                 except Exception as e:
-                    write_log(f"🔍 DEBUG: Could not remove /updates: {e}", log_file_path)
+                    write_log(f"DEBUG: Could not remove /updates: {e}", log_file_path)
             else:
-                write_log(f"🔍 DEBUG: Only {success_count}/{len(update_files)} files updated, keeping /updates folder", log_file_path)
+                write_log(f"DEBUG: Only {success_count}/{len(update_files)} files updated, keeping /updates folder", log_file_path)
             
             # Remove update flag only if at least some files succeeded
             if success_count > 0:
                 try:
-                    write_log("🔍 DEBUG: Removing update flag", log_file_path)
+                    write_log("DEBUG: Removing update flag", log_file_path)
                     os.remove('/updating.flag')
-                    write_log("🏁 Update flag removed", log_file_path)
+                    write_log("Update flag removed", log_file_path)
                 except Exception as e:
-                    write_log(f"🔍 DEBUG: Could not remove flag: {e}", log_file_path)
+                    write_log(f"DEBUG: Could not remove flag: {e}", log_file_path)
             else:
-                write_log("🔍 DEBUG: No files updated, keeping update flag for retry", log_file_path)
+                write_log("DEBUG: No files updated, keeping update flag for retry", log_file_path)
             
-            write_log(f"🔍 DEBUG: Update summary - {success_count} files updated out of {len(update_files)}", log_file_path)
+            write_log(f"DEBUG: Update summary - {success_count} files updated out of {len(update_files)}", log_file_path)
             if failed_files:
-                write_log(f"🔍 DEBUG: Failed files: {failed_files}", log_file_path)
+                write_log(f"DEBUG: Failed files: {failed_files}", log_file_path)
             
             if success_count > 0:
-                write_log(f"🔄 Firmware update complete ({success_count} files), restarting...", log_file_path)
+                write_log(f"Firmware update complete ({success_count} files), restarting...", log_file_path)
                 import microcontroller
                 microcontroller.reset()
             else:
-                write_log("❌ No files were successfully updated", log_file_path)
-                write_log("🔍 DEBUG: Update failed completely, will retry on next boot", log_file_path)
+                write_log("No files were successfully updated", log_file_path)
+                write_log("DEBUG: Update failed completely, will retry on next boot", log_file_path)
         else:
-            write_log("🔍 DEBUG: Updates folder is empty", log_file_path)
+            write_log("DEBUG: Updates folder is empty", log_file_path)
             # Empty updates folder, just remove it
             try:
                 os.rmdir('/updates')
-                write_log("🗑️ Removed empty updates folder", log_file_path)
+                write_log("Removed empty updates folder", log_file_path)
             except Exception as e:
-                write_log(f"🔍 DEBUG: Could not remove empty updates folder: {e}", log_file_path)
+                write_log(f"DEBUG: Could not remove empty updates folder: {e}", log_file_path)
                     
     except Exception as e:
-        write_log(f"⚠️ Update check failed: {e}", log_file_path)
-        write_log(f"🔍 DEBUG: Update check error details: {type(e).__name__}: {str(e)}", log_file_path)
+        write_log(f"Update check failed: {e}", log_file_path)
+        write_log(f"DEBUG: Update check error details: {type(e).__name__}: {str(e)}", log_file_path)
         # Clean up flag if it exists
         try:
             os.remove('/updating.flag')
@@ -579,64 +579,64 @@ def process_firmware_updates():
 # Check if we're in a boot loop (updating.flag exists from previous failed boot)
 def check_boot_loop():
     import os
-    print("🔍 DEBUG: Starting check_boot_loop()")
+    print("DEBUG: Starting check_boot_loop()")
     try:
         root_files = os.listdir('/')
-        print(f"🔍 DEBUG: Root file count: {len(root_files)}")
+        print(f"DEBUG: Root file count: {len(root_files)}")
         has_flag = 'updating.flag' in root_files
         has_updates = 'updates' in root_files
-        print(f"🔍 DEBUG: updating.flag={has_flag}, updates={has_updates}")
+        print(f"DEBUG: updating.flag={has_flag}, updates={has_updates}")
         
         if has_flag:
-            print("⚠️ Update flag detected from previous boot - possible boot loop")
-            print("🔄 Attempting recovery...")
+            print("Update flag detected from previous boot - possible boot loop")
+            print("Attempting recovery...")
             
             # Ensure filesystem is writable for recovery
             try:
                 storage.remount("/", readonly=False)
-                print("📝 Filesystem remounted for recovery")
+                print("Filesystem remounted for recovery")
             except Exception as e:
-                print(f"⚠️ Could not remount for recovery: {e}")
+                print(f"Could not remount for recovery: {e}")
             
             # Remove update flag to prevent infinite loop
             try:
                 os.remove('/updating.flag')
-                print("🏁 Update flag removed for recovery")
+                print("Update flag removed for recovery")
             except Exception as e:
-                print(f"🔍 DEBUG: Could not remove update flag: {e}")
+                print(f"DEBUG: Could not remove update flag: {e}")
             
             # Also clean up retry counter to prevent excessive retries
             try:
                 os.remove('/update_retry_count.txt')
-                print("🔍 DEBUG: Retry counter cleared for recovery")
+                print("DEBUG: Retry counter cleared for recovery")
             except:
                 pass
             
             # If updates folder still exists, remove it to prevent re-triggering
             try:
                 if has_updates:
-                    print("🔍 DEBUG: Found updates folder during recovery, clearing it")
+                    print("DEBUG: Found updates folder during recovery, clearing it")
                     update_files = os.listdir('/updates')
-                    print(f"🔍 DEBUG: {len(update_files)} files to remove")
+                    print(f"DEBUG: {len(update_files)} files to remove")
                     for filename in update_files:
                         try:
                             os.remove(f'/updates/{filename}')
-                            print(f"🔍 DEBUG: Removed {filename}")
+                            print(f"DEBUG: Removed {filename}")
                         except Exception as e:
-                            print(f"🔍 DEBUG: Could not remove {filename}: {e}")
+                            print(f"DEBUG: Could not remove {filename}: {e}")
                     os.rmdir('/updates')
-                    print("🗑️ Cleared updates folder for recovery")
+                    print("Cleared updates folder for recovery")
                 else:
-                    print("🔍 DEBUG: No updates folder found during recovery")
+                    print("DEBUG: No updates folder found during recovery")
             except Exception as e:
-                print(f"🔍 DEBUG: Error during updates folder cleanup: {e}")
+                print(f"DEBUG: Error during updates folder cleanup: {e}")
             
-            print("🔍 DEBUG: Boot loop recovery completed")
+            print("DEBUG: Boot loop recovery completed")
             return True  # Indicates we recovered from a potential boot loop
     except Exception as e:
-        print(f"🔍 DEBUG: Boot loop check failed: {e}")
+        print(f"DEBUG: Boot loop check failed: {e}")
     
-    print("🔍 DEBUG: No boot loop detected")
+    print("DEBUG: No boot loop detected")
     return False
 
 # Recovery check first (this may enable filesystem writes)
@@ -652,10 +652,10 @@ button = digitalio.DigitalInOut(board.GP10)
 button.switch_to_input(pull=digitalio.Pull.UP)
 
 if not button.value:  # GREEN_FRET pressed - manual debugging mode
-    print("🔓 GREEN_FRET pressed - USB drive enabled for manual debugging")
+    print("GREEN_FRET pressed - USB drive enabled for manual debugging")
     # USB drive remains enabled (writable filesystem)
 else:
-    print("🔒 USB drive disabled for normal operation")
+    print("USB drive disabled for normal operation")
     storage.disable_usb_drive()
     # Firmware updates work via serial protocol with automatic processing at boot
 

@@ -1,5 +1,5 @@
 # hardware.py
-__version__ = "3.9.20"
+__version__ = "3.9.22"
 
 def get_version():
     return __version__
@@ -38,5 +38,5 @@ def setup_leds(cfg):
     try:
         return neopixel.NeoPixel(cfg["neopixel_pin"], len(cfg["led_color"]), brightness=cfg["led_brightness"], auto_write=False)
     except Exception as e:
-        print("⚠️ NeoPixel init failed:", e)
+        print("NeoPixel init failed:", e)
         return None
