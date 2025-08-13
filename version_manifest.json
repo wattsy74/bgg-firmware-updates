@@ -1,11 +1,11 @@
 {
     "firmware_version":  "3.9.26",
-    "generated_at":  "2025-08-13T09:04:57.742Z",
+    "generated_at":  "2025-08-13T10:18:18.766Z",
     "files":  {
                   "boot.py":  {
                                   "version":  "3.9.26",
-                                  "checksum":  "a731fb0cb524cc758a26865598e1b2ad1cbe6b016de4296e832c13b33ece9e84",
-                                  "size":  30261,
+                                  "checksum":  "feff4590d0524620477992d67e7d12fba04e38b4924f5e70b98e91a3904daff8",
+                                  "size":  30674,
                                   "algorithm":  "sha256"
                               },
                   "code.py":  {
@@ -16,8 +16,8 @@
                               },
                   "serial_handler.py":  {
                                             "version":  "3.9.26",
-                                            "checksum":  "d100d1df24f9f60eb8f6f4c37b7514174a83c0c760af3d19b0a83fc7f77f2bf8",
-                                            "size":  56914,
+                                            "checksum":  "0d53a0e0d6c64676b2593a96a6785ba4ff7236282871ec3fafa2e20e88cb9271",
+                                            "size":  54853,
                                             "algorithm":  "sha256"
                                         },
                   "utils.py":  {
@@ -40,8 +40,8 @@
                                  },
                   "config.json":  {
                                       "version":  "3.9.26",
-                                      "checksum":  "725e948a93813c0e27245c85252b39fc6257a615af6604a9137841e8e440e86a",
-                                      "size":  1671,
+                                      "checksum":  "e29aa351d3bb0f991b35fbf6fed42d804c0f08434866c1b31aaaadec2c7f68f0",
+                                      "size":  1713,
                                       "algorithm":  "sha256"
                                   },
                   "presets.json":  {
@@ -52,5 +52,5 @@
                                    }
               },
     "update_url":  "https://api.github.com/repos/wattsy74/bgg-firmware-updates/contents/",
-    "release_notes":  "BGG Firmware v3.9.26 - Version bump for auto fw updater test"
+    "release_notes":  "BGG Firmware v3.9.26 - Changes to the rename function to make it quicker and safer for the device"
 }

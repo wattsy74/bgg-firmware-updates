@@ -4,6 +4,7 @@
                       "description":  "BumbleGum Guitar Controller Configuration",
                       "lastUpdated":  "2025-08-13"
                   },
+    "device_name":  "Guitar Controller",
     "UP":  "GP2",
     "DOWN":  "GP3",
     "LEFT":  "GP4",

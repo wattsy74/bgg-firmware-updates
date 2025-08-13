@@ -913,48 +913,17 @@ def handle_serial(serial, config, raw_config, leds, buttons, whammy, current_sta
                 # Handle READDEVICENAME command
                 elif mode is None and line == "READDEVICENAME":
                     try:
-                        # Read /boot.py as text and extract the product string
-                        with open("/boot.py", "r") as f:
-                            boot_lines = f.readlines()
-                        product_str = None
-                        print(f"READDEVICENAME: Searching through {len(boot_lines)} lines in boot.py")
-                        for i, l in enumerate(boot_lines):
-                            original_line = l
-                            l = l.strip()
-                            print(f"Line {i}: {repr(original_line)}")
-                            if "usb_hid.set_interface_name" in l:
-                                print(f"Found usb_hid.set_interface_name on line {i}: {repr(l)}")
-                                # Simple string parsing to find quoted strings
-                                # Look for strings in quotes (either single or double)
-                                quote_chars = ['"', "'"]
-                                found_strings = []
-                                for quote_char in quote_chars:
-                                    if quote_char in l:
-                                        parts = l.split(quote_char)
-                                        # Quoted strings will be at odd indices (1, 3, 5, etc.)
-                                        for j in range(1, len(parts), 2):
-                                            if parts[j].strip():  # Not empty
-                                                found_strings.append(parts[j])
-                                                print(f"Found quoted string with {quote_char}: {repr(parts[j])}")
-                                
-                                print(f"All found strings: {found_strings}")
-                                if found_strings:
-                                    # Take the first non-empty quoted string as the device name
-                                    product_str = found_strings[0]
-                                    print(f"Using product string: {repr(product_str)}")
-                                    break
-                                else:
-                                    print("No quoted strings found in usb_hid line")
-                            elif "usb_hid" in l:
-                                print(f"Found usb_hid (but not set_interface_name): {repr(l)}")
-                        print(f"Final product_str: {repr(product_str)}")
-                        prefix = "BumbleGum Guitars - "
-                        if product_str and prefix in product_str:
-                            device_name = product_str.split(prefix, 1)[1].strip()
-                        elif product_str:
-                            device_name = product_str.strip()
-                        else:
-                            device_name = "Unknown"
+                        # Read device name from config.json
+                        device_name = "Guitar Controller"  # Default fallback
+                        try:
+                            with open("/config.json", "r") as f:
+                                config = json.load(f)
+                            device_name = config.get("device_name", "Guitar Controller")
+                            print(f"READDEVICENAME: Loaded device name from config: '{device_name}'")
+                        except Exception as config_error:
+                            print(f"READDEVICENAME: Could not read from config.json, using default: {config_error}")
+                        
+                        # Send the device name (just the user part, not the full interface name)
                         serial.write((device_name + "\nEND\n").encode("utf-8"))
                         print(f"Device name sent: {device_name}")
                     except Exception as e:
