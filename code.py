@@ -1,20 +1,20 @@
 FIRMWARE_VERSIONS = {
-    "code.py": "3.9.26",
-    "hardware.py": "3.9.26",
-    "utils.py": "3.9.26",
-    "gamepad.py": "3.9.26",
-    "serial_handler.py": "3.9.26",
-    "pin_detect.py": "3.9.26",
-    "boot.py": "3.9.26",
-    "demo_routine.py": "3.9.26",
-    "demo_state.py": "3.9.26"
+    "code.py": "4.0.0",
+    "hardware.py": "4.0.0",
+    "utils.py": "4.0.0",
+    "gamepad.py": "4.0.0",
+    "serial_handler.py": "4.0.0",
+    "pin_detect.py": "4.0.0",
+    "boot.py": "4.0.0",
+    "demo_routine.py": "4.0.0",
+    "demo_state.py": "4.0.0"
 }
 
-# BGG Firmware v3.9.26 - Smart Acknowledgment System
+# BGG Firmware v4.0.0 - Smart Acknowledgment System
 # - Enhanced device detection and communication
 # - Smart ACK messages for Windows app compatibility
 # - Conditional debug output prevents firmware corruption
-# - Maintains v3.9.26 stability with communication improvements
+# - Maintains v4.0.0 stability with communication improvements
 
 def get_firmware_versions():
     return FIRMWARE_VERSIONS
@@ -209,6 +209,15 @@ def update_leds():
             color = hex_to_rgb(color)
         else: 
             color = config["led_color"][i] if pressed else config["released_color"][i]
+        
+        # Safety check: ensure color is a tuple/list before assignment
+        if isinstance(color, str):
+            print(f"Warning: LED color for {name} is still a string: {color}")
+            color = hex_to_rgb(color)
+        elif not isinstance(color, (tuple, list)):
+            print(f"Warning: Invalid LED color type for {name}: {type(color)}")
+            color = (0, 0, 0)  # Default to black
+            
         leds[i] = color
     leds.show()
 
