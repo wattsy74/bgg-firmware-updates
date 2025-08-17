@@ -5,6 +5,7 @@
                       "lastUpdated":  "2025-08-14"
                   },
     "device_name":  "Guitar Controller",
+    "controller_mode": "xinput",
     "UP":  "GP2",
     "DOWN":  "GP3",
     "LEFT":  "GP4",
